@@ -140,7 +140,7 @@ func (p *Paxos) HandleP1a(m P1a) {
 		p.active = false
 		// TODO use BackOff time or forward
 		// forward pending requests to new leader
-		p.forward()
+		//p.forward()
 		// if len(p.requests) > 0 {
 		// 	defer p.P1a()
 		// }
@@ -194,7 +194,7 @@ func (p *Paxos) HandleP1b(m P1b) {
 		p.ballot = m.Ballot
 		p.active = false // not necessary
 		// forward pending requests to new leader
-		p.forward()
+		//p.forward()
 		// p.P1a()
 	}
 
