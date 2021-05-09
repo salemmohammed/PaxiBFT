@@ -7,10 +7,9 @@ import (
 
 	"github.com/salemmohammed/PaxiBFT"
 	"github.com/salemmohammed/PaxiBFT/log"
-	"github.com/salemmohammed/PaxiBFT/paxos"
 	"github.com/salemmohammed/PaxiBFT/pbft"
-	"github.com/salemmohammed/PaxiBFT/tendStar"
 	"github.com/salemmohammed/PaxiBFT/streamlet"
+	"github.com/salemmohammed/PaxiBFT/tendStar"
 )
 
 var algorithm = flag.String("algorithm", "tendStar", "Distributed algorithm")
@@ -28,9 +27,6 @@ func replica(id PaxiBFT.ID) {
 	log.Infof("node %v starting...", id)
 
 	switch *algorithm {
-
-	case "paxos":
-		paxos.NewReplica(id).Run()
 
 	case "tendStar":
 		tendStar.NewReplica(id).Run()

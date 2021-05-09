@@ -4,16 +4,16 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/salemmohammed/PaxiBFT"
 	"os"
 	"strconv"
 	"strings"
-	"github.com/salemmohammed/PaxiBFT"
 )
 
 var id = flag.String("id", "", "node id this client connects to")
 var algorithm = flag.String("algorithm", "", "Client API type [paxos]")
 var master = flag.String("master", "", "Master address.")
-var delta = flag.Int("delta", 1, "value of delta.")
+var delta = flag.Int("delta", 0, "value of delta.")
 
 
 
@@ -33,15 +33,6 @@ var admin PaxiBFT.AdminClient
 
 func run(cmd string, args []string) {
 	switch cmd {
-	case "get":
-		if len(args) < 1 {
-			fmt.Println("get KEY")
-			return
-		}
-		k, _ := strconv.Atoi(args[0])
-		v, _ := client.Get(PaxiBFT.Key(k))
-		fmt.Println(string(v))
-
 	case "put":
 		if len(args) < 2 {
 			fmt.Println("put KEY VALUE")
@@ -104,13 +95,7 @@ func main() {
 
 	admin = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 
-	switch *algorithm {
-	case "paxos":
-		client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
-
-	default:
-		client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
-	}
+	client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 
 	if len(flag.Args()) > 0 {
 		run(flag.Args()[0], flag.Args()[1:])
@@ -125,7 +110,6 @@ func main() {
 			}
 			cmd := words[0]
 			args := words[1:]
-
 			run(cmd, args)
 		}
 	}

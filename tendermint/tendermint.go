@@ -3,7 +3,7 @@ package tendermint
 import (
 	//"container/list"
 	"github.com/salemmohammed/PaxiBFT"
-	"github.com/salemmohammed/BigBFT/PaxiBFT/log"
+	"github.com/salemmohammed/PaxiBFT/log"
 	"strconv"
 	"time"
 	"sync"

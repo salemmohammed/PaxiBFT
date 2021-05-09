@@ -1,19 +1,17 @@
 package PaxiBFT
 
 import (
+	"github.com/salemmohammed/PaxiBFT/log"
 	"math"
 	"math/rand"
 	"sync"
 	"time"
-
-	"github.com/salemmohammed/PaxiBFT/log"
 )
 
 // DB is general interface implemented by client to call client library
 type DB interface {
 	Init() error
-	Read(key int) ([]int)
-	Write(key, value int) []error
+	Write(key, value int) error
 	Stop() error
 }
 
@@ -53,7 +51,7 @@ func DefaultBConfig() Bconfig {
 		T:                    60,
 		N:                    0,
 		K:                    1000,
-		W:                    0.5,
+		W:                    1,
 		Throttle:             0,
 		Concurrency:          1,
 		Distribution:         "uniform",
@@ -171,7 +169,6 @@ func (b *Benchmark) Run() {
 				go b.collect(latencies)
 				keys <- b.next()
 			}
-			//b.wait.Wait()
 		}
 	} else {
 		for i := 0; i < b.N; i++ {
@@ -184,8 +181,6 @@ func (b *Benchmark) Run() {
 	t := time.Now().Sub(b.startTime)
 	b.db.Stop()
 	close(keys)
-	//log.Debugf("Waiting ----- --- -- ")
-	//b.wait.Wait()
 	stat := Statistic(b.latency)
 	log.Infof("latency length = %d", len(b.latency))
 	log.Infof("Concurrency = %d", b.Concurrency)
@@ -258,56 +253,29 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 	log.Debugf("worker")
 	var s time.Time
 	var e time.Time
-	var v1 []int
 	var v int
-	//var err error
-	var err1 []error
+	var err error
+	//var err1 []error
 	for k := range keys {
 		op := new(operation)
 		if rand.Float64() < b.W {
 			v = rand.Int()
 			s = time.Now()
 			//time.Sleep(2 * time.Millisecond)
-			err1 = b.db.Write(k, v)
+			err = b.db.Write(k, v)
 			e = time.Now()
-			log.Debugf("W")
 			op.input = v
-		} else {
-			s = time.Now()
-			//time.Sleep(2 * time.Millisecond)
-			v1 = b.db.Read(k)
-			e = time.Now()
-			log.Debugf("R")
-			op.output = v1
 		}
-		flag := false
 		op.start = s.Sub(b.startTime).Nanoseconds()
-		for _,v := range err1 {
-			if v == nil {
-				flag = false
-			} else {
-				flag = true
-				op.end = math.MaxInt64
-				log.Error(v)
-			}
+		if err == nil {
+			op.end = e.Sub(b.startTime).Nanoseconds()
+			result <- e.Sub(s)
+		} else {
+			op.end = math.MaxInt64
+			log.Error(err)
 		}
-			//if err1 == nil {
-			//	//flag = true
-			//	op.end = e.Sub(b.startTime).Nanoseconds()
-			//	result <- e.Sub(s)
-			//}else{
-			//	op.end = math.MaxInt64
-			//	log.Error(v)
-			//}
-			if flag == false {
-				op.end = e.Sub(b.startTime).Nanoseconds()
-				result <- e.Sub(s)
-			}
 		b.History.AddOperation(k, op)
 	}
-	//for i, v := range v1{
-	//	log.Debugf("i=%v,v=%v",i,v)
-	//}
 }
 
 func (b *Benchmark) collect(latencies <-chan time.Duration) {

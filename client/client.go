@@ -12,7 +12,7 @@ var id = flag.String("id", "", "node id this client connects to")
 var algorithm = flag.String("algorithm", "", "Client API type [paxos]")
 var load = flag.Bool("load", false, "Load K keys into DB")
 var master = flag.String("master", "", "Master address.")
-var delta = flag.Int("delta", 1, "value of delta.")
+var delta = flag.Int("delta", 0, "value of delta.")
 
 
 type db struct {
@@ -28,30 +28,11 @@ func (d *db) Stop() error {
 }
 
 
-func (d *db) Read(k int) (value []int) {
-	//log.Debugf("Read")
-	key := PaxiBFT.Key(k)
-	v, _ := d.GetMUL(key)
-	//log.Debugf("after the Read in client")
-	if len(v) == 0 {
-		//log.Debugf("len(v) %v", len(v))
-		return nil
-	}
-	var m []int
-	for _,v := range v{
-		x, _ := binary.Uvarint(v)
-		//log.Debugf("x %v", x)
-		m = append(m,int(x))
-	}
-	//log.Debugf("m %v", m)
-	return m
-}
-
-func (d *db) Write(k, v int) []error {
+func (d *db) Write(k, v int) error {
 	key := PaxiBFT.Key(k)
 	value := make([]byte, binary.MaxVarintLen64)
 	binary.PutUvarint(value, uint64(v))
-	err := d.Put(key, value)
+	err := d.PutMUL(key, value)
 	return err
 }
 
@@ -64,11 +45,15 @@ func main() {
 
 	d := new(db)
 	switch *algorithm {
-	case "paxos":
-		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "tendermint":
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "tendStar":
+		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
+	case "hotstuff":
+		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
+	case "pbft":
+		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
+	case "streamlet":
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	default:
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))

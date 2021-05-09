@@ -42,8 +42,6 @@ func (n *node) http() {
 }
 
 func (n *node) handleRoot(w http.ResponseWriter, r *http.Request) {
-	log.Debugf("\n\n\n")
-	log.Debugf("<------------handleRoot---------->")
 	var req Request
 	var cmd Command
 	var err error
