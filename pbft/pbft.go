@@ -165,15 +165,9 @@ func (p *Pbft) HandlePre(m PrePrepare) {
 	}
 	e, ok = p.log[m.Slot]
 
-	//if m.Ballot < p.ballot {
-	//	log.Debugf("old message")
-	//	return
-	//}
-
 	e.Digest = GetMD5Hash(&m.Request)
 	for i, v := range e.Digest {
 		if v != m.Digest[i] {
-			log.Debugf("i should be here")
 			return
 		}
 	}
@@ -185,8 +179,6 @@ func (p *Pbft) HandlePre(m PrePrepare) {
 		View:    m.View,
 		Slot:    m.Slot,
 		Digest:  m.Digest,
-		Command: m.Command,
-		Request: m.Request,
 	})
 	log.Debugf("++++++ HandlePre Done ++++++")
 }
@@ -221,14 +213,6 @@ func (p *Pbft) HandlePrepare(m Prepare) {
 	e, ok = p.log[m.Slot]
 	e.Q1.ACK(m.ID)
 
-	// old message
-	e.Digest = GetMD5Hash(&m.Request)
-	for i, v := range e.Digest {
-		if v != m.Digest[i] {
-			log.Debugf("digest message")
-			return
-		}
-	}
 	if e.Q1.Majority(){
 		e.Q1.Reset()
 		e.Pstatus = PREPARED
@@ -238,8 +222,6 @@ func (p *Pbft) HandlePrepare(m Prepare) {
 			View:    p.view,
 			Slot:    m.Slot,
 			Digest:  m.Digest,
-			Command: m.Command,
-			Request: m.Request,
 		})
 	}
 	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED && e.Rstatus == RECEIVED{
@@ -281,13 +263,7 @@ func (p *Pbft) HandleCommit(m Commit) {
 	e, exist = p.log[m.Slot]
 	e.Q2.ACK(m.ID)
 
-	e.Digest = GetMD5Hash(&m.Request)
-	for i, v := range e.Digest {
-		if v != m.Digest[i] {
-			log.Debugf("digest message")
-			return
-		}
-	}
+
 	log.Debugf("Q2 size =%v", e.Q2.Size())
 	if e.Q2.Majority(){
 		e.Cstatus = COMMITTED
