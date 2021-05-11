@@ -26,7 +26,7 @@ func NewReplica(id PaxiBFT.ID) *Replica {
 	r.Register(PrePrepare{},      r.HandlePre           )
 	r.Register(ViewChange{},      r.HandleViewChange    )
 	r.Register(NewChange{},       r.HandleNewChange     )
-	r.Register(SecondPrePrepare{},      r.HandlePreAfterChange)
+	r.Register(SecondPrePrepare{},r.HandlePreAfterChange)
 	r.Register(Prepare{},         r.HandlePrepare       )
 	r.Register(Commit{},          r.HandleCommit        )
 

@@ -22,6 +22,7 @@ type PrePrepare struct {
 	Slot    	int
 	Request 	PaxiBFT.Request
 	Digest 		[]byte
+	Node_ID     PaxiBFT.ID
 }
 
 func (m PrePrepare) String() string {

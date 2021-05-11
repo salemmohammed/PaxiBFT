@@ -33,20 +33,12 @@ type entry struct {
 	Rstatus	   status
 }
 
-
-type entryBFT struct {
-	commit    bool
-	request   *PaxiBFT.Request
-	timestamp time.Time
-	Digest    []byte
-}
-
 type Pbftbft struct {
 	PaxiBFT.Node
 	config          []PaxiBFT.ID
 	N               PaxiBFT.Config
 	log             map[int]*entry       // log ordered by slot
-	BFTlog          map[int]*entryBFT
+
 	slot            int                  // highest slot number
 	view            PaxiBFT.View            // view number
 	ballot          PaxiBFT.Ballot          // highest ballot number
@@ -59,7 +51,6 @@ func NewPbftBFT(n PaxiBFT.Node, options ...func(*Pbftbft)) *Pbftbft {
 	p := &Pbftbft{
 		Node:            n,
 		log:             make(map[int]*entry, PaxiBFT.GetConfig().BufferSize),
-		BFTlog:          make(map[int]*entryBFT, PaxiBFT.GetConfig().BufferSize),
 		quorum:          PaxiBFT.NewQuorum(),
 		slot:            -1,
 		requests:        make([]*PaxiBFT.Request, 0),
@@ -91,10 +82,10 @@ func (p *Pbftbft) PrePrepare(r *PaxiBFT.Request, s *[]byte, slt int) {
 		Slot:       slt,
 		Request:    *r,
 		Digest:     *s,
+		Node_ID:    p.ID(),
 	})
 	log.Debugf("++++++ PrePrepare Done ++++++")
 }
-
 func (p *Pbftbft) HandlePre(m PrePrepare) {
 	log.Debugf("<--------------------HandlePre------------------>")
 	log.Debugf(" Sender  %v ", m.ID)
@@ -102,14 +93,22 @@ func (p *Pbftbft) HandlePre(m PrePrepare) {
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(1))
 	// non leader node suspcious the leader
 	Digest := GetMD5Hash(&m.Request)
-
-	p.BFTlog[m.Slot] = &entryBFT{
-		commit: false,
-		request: &m.Request,
-		timestamp: time.Now(),
-		Digest: Digest,
+	_, ok := p.log[m.Slot]
+	if !ok {
+		p.log[p.slot] = &entry{
+			ballot:    p.ballot,
+			commit:    false,
+			active:    false,
+			Leader:    false,
+			request:   &m.Request,
+			timestamp: time.Now(),
+			Digest:    GetMD5Hash(&m.Request),
+			Q1:        PaxiBFT.NewQuorum(),
+			Q2:        PaxiBFT.NewQuorum(),
+			Q3:        PaxiBFT.NewQuorum(),
+			Q4:        PaxiBFT.NewQuorum(),
+		}
 	}
-
 	if Node_ID != p.ID() {
 		log.Debugf("Sart View Change Message ")
 		p.Broadcast(ViewChange{
@@ -121,23 +120,11 @@ func (p *Pbftbft) HandlePre(m PrePrepare) {
 }
 func (p *Pbftbft) HandleViewChange(m ViewChange) {
 	log.Debugf("<--------------------HandleViewChange------------------>")
-
+	log.Debugf("sender = %v", m.ID)
 		e, ok := p.log[m.Slot]
 		if !ok {
-			log.Debugf("Create a log")
-			p.log[m.Slot] = &entry{
-				command:   m.Request.Command,
-				commit:    false,
-				active:    false,
-				Leader:    false,
-				request:   &m.Request,
-				timestamp: time.Now(),
-				Digest:    GetMD5Hash(&m.Request),
-				Q1:        PaxiBFT.NewQuorum(), // view change
-				Q2:        PaxiBFT.NewQuorum(),
-				Q3:        PaxiBFT.NewQuorum(),
-				Q4:        PaxiBFT.NewQuorum(),
-			}
+			log.Debugf("return")
+			return
 		}
 		e = p.log[m.Slot]
 		e.Q1.ACK(m.ID)
@@ -155,20 +142,8 @@ func (p *Pbftbft) HandleNewChange(m NewChange) {
 	log.Debugf("<--------------------HandleNewChange------------------>")
 	e, ok := p.log[m.Slot]
 	if !ok {
-		log.Debugf("Create a log")
-		p.log[m.Slot] = &entry{
-			command:   m.Request.Command,
-			commit:    false,
-			active:    false,
-			Leader:    false,
-			request:   &m.Request,
-			timestamp: time.Now(),
-			Digest:    GetMD5Hash(&m.Request),
-			Q1:        PaxiBFT.NewQuorum(), // view change
-			Q2:        PaxiBFT.NewQuorum(), // new change
-			Q3:        PaxiBFT.NewQuorum(),
-			Q4:        PaxiBFT.NewQuorum(),
-		}
+		log.Debugf("return")
+		return
 	}
 	e = p.log[m.Slot]
 	e.Q2.ACK(m.ID)
@@ -189,8 +164,6 @@ func (p *Pbftbft) HandlePreAfterChange(m SecondPrePrepare) {
 	log.Debugf(" Sender  %v ", m.ID)
 	log.Debugf(" m.Slot  %v ", m.Slot)
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(1))
-	// non leader node suspcious the leader
-	//e := p.log[m.Slot]
 
 	if Node_ID != p.ID() {
 		log.Debugf("Sart View Change Message ")
