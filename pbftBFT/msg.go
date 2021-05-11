@@ -8,6 +8,7 @@ import (
 
 func init() {
 	gob.Register(PrePrepare{})
+	gob.Register(SecondPrePrepare{})
 	gob.Register(ViewChange{})
 	gob.Register(NewChange{})
 	gob.Register(Prepare{})
@@ -62,6 +63,7 @@ type ViewChange struct {
 	ID    	 PaxiBFT.ID
 	Slot     int
 	Request  PaxiBFT.Request
+	Digest 	[]byte
 }
 
 func (m ViewChange) String() string {
@@ -77,4 +79,14 @@ type NewChange struct {
 
 func (m NewChange) String() string {
 	return fmt.Sprintf("NewChange {p.ID=%v, Slot=%v, Request=%v}", m.ID, m.Slot, m.Request)
+}
+
+type SecondPrePrepare struct {
+	ID     		PaxiBFT.ID
+	Slot    	int
+	Digest 		[]byte
+}
+
+func (m SecondPrePrepare) String() string {
+	return fmt.Sprintf("SecondPrePrepare {ID=%v , slot=%v, Digest=%v}", m.ID,m.Slot,m.Digest)
 }

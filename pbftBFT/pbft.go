@@ -55,7 +55,7 @@ type Pbftbft struct {
 	quorum          *PaxiBFT.Quorum // phase 1 quorum
 	RecivedReq      bool
 }
-func NewPbft(n PaxiBFT.Node, options ...func(*Pbftbft)) *Pbftbft {
+func NewPbftBFT(n PaxiBFT.Node, options ...func(*Pbftbft)) *Pbftbft {
 	p := &Pbftbft{
 		Node:            n,
 		log:             make(map[int]*entry, PaxiBFT.GetConfig().BufferSize),
@@ -85,7 +85,6 @@ func (p *Pbftbft) HandleRequest(r PaxiBFT.Request, s int) {
 }
 func (p *Pbftbft) PrePrepare(r *PaxiBFT.Request, s *[]byte, slt int) {
 	log.Debugf("<--------------------PrePrepare------------------>")
-
 	p.Broadcast(PrePrepare{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
@@ -103,12 +102,14 @@ func (p *Pbftbft) HandlePre(m PrePrepare) {
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(1))
 	// non leader node suspcious the leader
 	Digest := GetMD5Hash(&m.Request)
-	p.log[m.Slot] = entryBFT{
+
+	p.BFTlog[m.Slot] = &entryBFT{
 		commit: false,
-		request: m,
-		timestamp time.Time,
+		request: &m.Request,
+		timestamp: time.Now(),
 		Digest: Digest,
 	}
+
 	if Node_ID != p.ID() {
 		log.Debugf("Sart View Change Message ")
 		p.Broadcast(ViewChange{
@@ -171,32 +172,32 @@ func (p *Pbftbft) HandleNewChange(m NewChange) {
 	}
 	e = p.log[m.Slot]
 	e.Q2.ACK(m.ID)
+	e.Digest = GetMD5Hash(&m.Request)
 	if e.Q2.Majority(){
 		New_Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(2))
 		if New_Node_ID == p.ID(){
-			p.Broadcast(PrePrepare{
+			p.Broadcast(SecondPrePrepare{
 				ID:         p.ID(),
 				Slot:       m.Slot,
-				Request:    m.Request,
-				Command:    m.Request.Command,
+				Digest:    e.Digest,
 			})
 		}
 	}
 }
-func (p *Pbftbft) HandlePreAfterChange(m PrePrepare) {
+func (p *Pbftbft) HandlePreAfterChange(m SecondPrePrepare) {
 	log.Debugf("<--------------------HandlePre------------------>")
 	log.Debugf(" Sender  %v ", m.ID)
 	log.Debugf(" m.Slot  %v ", m.Slot)
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(1))
 	// non leader node suspcious the leader
-	e := p.log[m.Slot]
-	e.Digest = GetMD5Hash(&m.Request)
+	//e := p.log[m.Slot]
+
 	if Node_ID != p.ID() {
 		log.Debugf("Sart View Change Message ")
 		p.Broadcast(Prepare{
 			ID: 	 p.ID(),
 			Slot:    m.Slot,
-			Digest:  e.Digest,
+			Digest:  m.Digest,
 		})
 	}
 }
