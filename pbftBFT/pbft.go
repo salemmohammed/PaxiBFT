@@ -158,7 +158,7 @@ func (p *Pbftbft) HandleViewChange(m ViewChange) {
 			log.Debugf("Sart New Change Message ")
 			p.Broadcast(NewChange{
 				ID: 	 New_Node_ID,
-				Slot:    p.slot,
+				Slot:    m.Slot,
 				Request: *e.request,
 			})
 		}

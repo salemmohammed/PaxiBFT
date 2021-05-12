@@ -90,5 +90,4 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 		e.commit = true
 		p.exec()
 	}
-
 }
