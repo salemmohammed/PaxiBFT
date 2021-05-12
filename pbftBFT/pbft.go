@@ -96,10 +96,10 @@ func (p *Pbftbft) HandlePre(m PrePrepare) {
 	log.Debugf(" m.Slot  %v ", m.Slot)
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(1))
 	// non leader node suspcious the leader
-	Digest := GetMD5Hash(&m.Request)
+	//Digest := GetMD5Hash(&m.Request)
 	_, ok := p.log[m.Slot]
 	if !ok {
-		p.log[p.slot] = &entry{
+		p.log[m.Slot] = &entry{
 			ballot:    p.ballot,
 			commit:    false,
 			active:    false,
@@ -118,7 +118,7 @@ func (p *Pbftbft) HandlePre(m PrePrepare) {
 		p.Broadcast(ViewChange{
 			ID: 	 p.ID(),
 			Slot:    m.Slot,
-			Digest:  Digest,
+			Request: m.Request,
 		})
 	}
 }
@@ -128,14 +128,26 @@ func (p *Pbftbft) HandleViewChange(m ViewChange) {
 	log.Debugf("m.Slot = %v", m.Slot)
 		e, ok := p.log[m.Slot]
 		if !ok {
-			log.Debugf("return")
-			return
+			p.log[m.Slot] = &entry{
+				ballot:    p.ballot,
+				commit:    false,
+				active:    false,
+				Leader:    false,
+				request:   &m.Request,
+				timestamp: time.Now(),
+				Digest:    GetMD5Hash(&m.Request),
+				Q1:        PaxiBFT.NewQuorum(),
+				Q2:        PaxiBFT.NewQuorum(),
+				Q3:        PaxiBFT.NewQuorum(),
+				Q4:        PaxiBFT.NewQuorum(),
+
+			}
 		}
 		e = p.log[m.Slot]
 		e.Q1.ACK(m.ID)
 	    Digest := GetMD5Hash(e.request)
 		for i, v := range Digest {
-			if v != m.Digest[i] {
+			if v != e.Digest[i] {
 				log.Debugf("digest message")
 				return
 			}

@@ -57,12 +57,11 @@ func (m Commit) String() string {
 type ViewChange struct {
 	ID    	 PaxiBFT.ID
 	Slot     int
-	//Request  PaxiBFT.Request
-	Digest 	[]byte
+	Request  PaxiBFT.Request
 }
 
 func (m ViewChange) String() string {
-	return fmt.Sprintf("ViewChange {p.ID=%v, Slot=%v, Digest=%v}", m.ID, m.Slot, m.Digest)
+	return fmt.Sprintf("ViewChange {p.ID=%v, Slot=%v, Request=%v}", m.ID, m.Slot,m.Request.Command)
 }
 
 // ViewChange  message
