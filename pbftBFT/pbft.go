@@ -13,6 +13,7 @@ const (
 	PREPARED
 	COMMITTED
 	RECEIVED
+	NEWCHAMGED
 )
 // log's entries
 type entry struct {
@@ -31,6 +32,7 @@ type entry struct {
 	Pstatus    status
 	Cstatus    status
 	Rstatus	   status
+	NCstatus   status
 }
 
 type Pbftbft struct {
@@ -72,6 +74,8 @@ func (p *Pbftbft) HandleRequest(r PaxiBFT.Request, s int) {
 	e.Digest = GetMD5Hash(&r)
 	log.Debugf("[p.ballot.ID %v, p.ballot %v ]", p.ballot.ID(), p.ballot)
 	log.Debugf("PrePrepare will be called")
+	e.active = false
+	e.Leader = false
 	p.PrePrepare(&r, &e.Digest, s)
 }
 func (p *Pbftbft) PrePrepare(r *PaxiBFT.Request, s *[]byte, slt int) {
@@ -121,6 +125,7 @@ func (p *Pbftbft) HandlePre(m PrePrepare) {
 func (p *Pbftbft) HandleViewChange(m ViewChange) {
 	log.Debugf("<--------------------HandleViewChange------------------>")
 	log.Debugf("sender = %v", m.ID)
+	log.Debugf("m.Slot = %v", m.Slot)
 		e, ok := p.log[m.Slot]
 		if !ok {
 			log.Debugf("return")
@@ -128,35 +133,49 @@ func (p *Pbftbft) HandleViewChange(m ViewChange) {
 		}
 		e = p.log[m.Slot]
 		e.Q1.ACK(m.ID)
+	    Digest := GetMD5Hash(e.request)
+		for i, v := range Digest {
+			if v != m.Digest[i] {
+				log.Debugf("digest message")
+				return
+			}
+		}
 		if e.Q1.Majority(){
+			e.Q1.Reset()
 			New_Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(2))
 			log.Debugf("Sart New Change Message ")
 			p.Broadcast(NewChange{
 				ID: 	 New_Node_ID,
 				Slot:    p.slot,
-				Request: m.Request,
+				Request: *e.request,
 			})
 		}
 }
 func (p *Pbftbft) HandleNewChange(m NewChange) {
 	log.Debugf("<--------------------HandleNewChange------------------>")
+	log.Debugf("sender = %v", m.ID)
+	log.Debugf("m.Slot = %v", m.Slot)
 	e, ok := p.log[m.Slot]
 	if !ok {
 		log.Debugf("return")
 		return
 	}
+	if e.NCstatus == NEWCHAMGED{
+		log.Debugf("NEWCHAMGED")
+		return
+	}
 	e = p.log[m.Slot]
-	e.Q2.ACK(m.ID)
 	e.Digest = GetMD5Hash(&m.Request)
-	if e.Q2.Majority(){
-		New_Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(2))
-		if New_Node_ID == p.ID(){
-			p.Broadcast(SecondPrePrepare{
-				ID:         p.ID(),
-				Slot:       m.Slot,
-				Digest:    e.Digest,
-			})
-		}
+	New_Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(2))
+	if New_Node_ID == p.ID(){
+		e.active = true
+		e.Leader = true
+		e.NCstatus = NEWCHAMGED
+		p.Broadcast(SecondPrePrepare{
+			ID:         p.ID(),
+			Slot:       m.Slot,
+			Digest:    e.Digest,
+		})
 	}
 }
 func (p *Pbftbft) HandlePreAfterChange(m SecondPrePrepare) {
@@ -184,32 +203,17 @@ func (p *Pbftbft) HandlePrepare(m Prepare) {
 	e, ok := p.log[m.Slot]
 
 	if !ok {
-		log.Debugf("we create a log")
-		p.log[m.Slot] = &entry{
-			ballot:    p.ballot,
-			command:   m.Command,
-			commit:    false,
-			active:    false,
-			Leader:    false,
-			request:   &m.Request,
-			timestamp: time.Now(),
-			Digest:    GetMD5Hash(&m.Request),
-			Q1:        PaxiBFT.NewQuorum(),
-			Q2:        PaxiBFT.NewQuorum(),
-			Q3:        PaxiBFT.NewQuorum(),
-			Q4:        PaxiBFT.NewQuorum(),
-		}
+		log.Debugf("return")
+		return
 	}
-	e, ok = p.log[m.Slot]
 	e.Q1.ACK(m.ID)
 
-	if e.Q1.Majority(){
+	if e.Q1.PreparedMajority() && e.Pstatus != PREPARED{
 		e.Q1.Reset()
 		e.Pstatus = PREPARED
 		p.Broadcast(Commit{
 			Ballot:  p.ballot,
 			ID:      p.ID(),
-			View:    p.view,
 			Slot:    m.Slot,
 			Digest:  m.Digest,
 		})
@@ -221,7 +225,6 @@ func (p *Pbftbft) HandlePrepare(m Prepare) {
 	log.Debugf("++++++ HandlePrepare Done ++++++")
 }
 
-// HandleCommit starts phase 3
 func (p *Pbftbft) HandleCommit(m Commit) {
 	log.Debugf("<--------------------HandleCommit------------------>")
 	log.Debugf(" Sender  %v ", m.ID)
@@ -233,25 +236,11 @@ func (p *Pbftbft) HandleCommit(m Commit) {
 	}
 	e, exist := p.log[m.Slot]
 	if !exist {
-		log.Debugf("create a log")
-		p.log[m.Slot] = &entry{
-			ballot:    p.ballot,
-			command:   m.Command,
-			commit:    false,
-			active:    false,
-			Leader:    false,
-			request:   &m.Request,
-			timestamp: time.Now(),
-			Digest:    GetMD5Hash(&m.Request),
-			Q1:        PaxiBFT.NewQuorum(),
-			Q2:        PaxiBFT.NewQuorum(),
-			Q3:        PaxiBFT.NewQuorum(),
-			Q4:        PaxiBFT.NewQuorum(),
-		}
+		log.Debugf("return")
+		return
 	}
-	e, exist = p.log[m.Slot]
+	e = p.log[m.Slot]
 	e.Q2.ACK(m.ID)
-
 
 	log.Debugf("Q2 size =%v", e.Q2.Size())
 	if e.Q2.Majority(){

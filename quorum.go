@@ -75,6 +75,10 @@ func (q *Quorum) All() bool {
 func (q *Quorum) Majority() bool {
 	return q.size >= config.n/2
 }
+// Majority quorum satisfied
+func (q *Quorum) PreparedMajority() bool {
+	return q.size >= (config.n/2) -1
+}
 
 // FastQuorum from fast paxos
 func (q *Quorum) FastQuorum() bool {

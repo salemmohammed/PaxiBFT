@@ -33,42 +33,36 @@ func (m PrePrepare) String() string {
 type Prepare struct {
 	Ballot 	PaxiBFT.Ballot
 	ID     	PaxiBFT.ID
-	View   	PaxiBFT.View
 	Slot   	int
 	Digest 	[]byte
-	Command PaxiBFT.Command
-	Request PaxiBFT.Request
 }
 
 func (m Prepare) String() string {
-	return fmt.Sprintf("Prepare {Ballot=%v, ID=%v, View=%v, slot=%v, command=%v}", m.Ballot,m.ID,m.View,m.Slot,m.Command)
+	return fmt.Sprintf("Prepare {Ballot=%v, ID=%v, slot=%v, Digest=%v}", m.Ballot,m.ID,m.Slot,m.Digest)
 }
 
 // Commit  message
 type Commit struct {
 	Ballot   PaxiBFT.Ballot
 	ID    	 PaxiBFT.ID
-	View 	 PaxiBFT.View
 	Slot     int
 	Digest 	 []byte
-	Command  PaxiBFT.Command
-	Request  PaxiBFT.Request
 }
 
 func (m Commit) String() string {
-	return fmt.Sprintf("Commit {Ballot=%v, ID=%v, View=%v, Slot=%v, command=%v}", m.Ballot,m.ID,m.View,m.Slot, m.Command)
+	return fmt.Sprintf("Commit {Ballot=%v, ID=%v, Slot=%v, Digest}", m.Ballot,m.ID,m.Slot,m.Digest)
 }
 
 // ViewChange  message
 type ViewChange struct {
 	ID    	 PaxiBFT.ID
 	Slot     int
-	Request  PaxiBFT.Request
+	//Request  PaxiBFT.Request
 	Digest 	[]byte
 }
 
 func (m ViewChange) String() string {
-	return fmt.Sprintf("ViewChange {p.ID=%v, Slot=%v, Request=%v}", m.ID, m.Slot, m.Request)
+	return fmt.Sprintf("ViewChange {p.ID=%v, Slot=%v, Digest=%v}", m.ID, m.Slot, m.Digest)
 }
 
 // ViewChange  message

@@ -53,6 +53,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 			Q2:        PaxiBFT.NewQuorum(),
 			Q3:        PaxiBFT.NewQuorum(),
 			Q4:        PaxiBFT.NewQuorum(),
+
 		}
 	}
 	e = p.log[p.slot]
@@ -76,16 +77,14 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	if Node_ID == p.ID(){
 		log.Debugf("The Leader is malicious = %v", p.ID())
 		e.active = true
+		e.Leader = true
 	}
 
-	if e.active{
-		log.Debugf("The view leader : %v ", p.ID())
-		e.Leader = true
-		p.ballot.Next(p.ID())
-		p.requests = append(p.requests, &m)
+	p.ballot.Next(p.ID())
+	p.requests = append(p.requests, &m)
+	if e.Leader{
 		p.Pbftbft.HandleRequest(m, p.slot)
 	}
-
 	e.Rstatus = RECEIVED
 	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED && e.Rstatus == RECEIVED{
 		e.commit = true
