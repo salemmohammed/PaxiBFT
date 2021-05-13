@@ -8,43 +8,25 @@ import (
 func init() {
 
 	gob.Register(Propose{})
-	gob.Register(PreCommit{})
-	gob.Register(ActPreCommit{})
+	gob.Register(Vote{})
 
 }
-// Propose
 type Propose struct {
 	Ballot 		PaxiBFT.Ballot
 	ID     		PaxiBFT.ID
 	Request 	PaxiBFT.Request
 	Slot 		int
-	Command 	PaxiBFT.Command
-	View		PaxiBFT.View
 }
 func (m Propose) String() string {
-	return fmt.Sprintf("Propose {Ballot %v,Command %v, Slot %v}", m.Ballot, m.Command, m.Slot)
+	return fmt.Sprintf("Propose {Ballot %v,Command %v, Slot %v}", m.Ballot, m.Request.Command, m.Slot)
 }
-// PreCommit  message
-type PreCommit struct {
+
+type Vote struct {
 	Ballot 	PaxiBFT.Ballot
 	ID     	PaxiBFT.ID
-	Request PaxiBFT.Request
-	Command PaxiBFT.Command
 	Slot 	int
-	Commit  bool
+	Digest []byte
 }
-func (m PreCommit) String() string {
-	return fmt.Sprintf("PreCommit {Ballot %v, Command %v, Commit %v, Slot %v}", m.Ballot,  m.Command, m.Commit,m.Slot)
-}
-// ActPropose  message
-type ActPreCommit struct {
-	Ballot 	PaxiBFT.Ballot
-	ID     	PaxiBFT.ID
-	Request PaxiBFT.Request
-	Command PaxiBFT.Command
-	Slot 	int
-	Commit  bool
-}
-func (m ActPreCommit) String() string {
-	return fmt.Sprintf("ActPreCommit {Ballot %v, Command %v,Slot %v, Commit %v,}", m.Ballot,  m.Command,m.Slot,m.Commit)
+func (m Vote) String() string {
+	return fmt.Sprintf("Vote {Ballot %v, ID %v,Slot %v, Digest %v,}", m.Ballot, m.ID,m.Slot,m.Digest)
 }
