@@ -164,7 +164,6 @@ func (b *Benchmark) Run() {
 				break loop
 			default:
 				b.wait.Add(config.n)
-				//b.wait.Add(1)
 				log.Debugf("b.wait.Add")
 				go b.collect(latencies)
 				keys <- b.next()

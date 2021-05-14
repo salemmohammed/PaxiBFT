@@ -80,6 +80,7 @@ func (p *Streamlet) handlePropose(m Propose) {
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 
+
 	e, ok := p.log[m.Slot]
 	if !ok {
 		log.Debugf("Create the log")
@@ -96,7 +97,6 @@ func (p *Streamlet) handlePropose(m Propose) {
 		}
 	}
 	e = p.log[m.Slot]
-
 	e.Pstatus = PREPARED
 	p.Broadcast(Vote{
 		Ballot:  p.ballot,
@@ -171,20 +171,12 @@ func (p *Streamlet) exec() {
 			}
 
 			if e.request != nil && e.Leader {
-				//reply.Properties[HTTPHeaderSlot] = strconv.Itoa(p.execute)
-				//reply.Properties[HTTPHeaderBallot] = e.Ballot.String()
-				//reply.Properties[HTTPHeaderExecute] = strconv.Itoa(p.execute)
 				e.request.Reply(reply)
 				log.Debugf("********* Reply Primary *********")
 				e.request = nil
 			}else{
 				log.Debugf("********* Replica Request ********* ")
-				//reply.Properties[HTTPHeaderSlot] = strconv.Itoa(p.execute)
-				//reply.Properties[HTTPHeaderBallot] = e.Ballot.String()
-				//reply.Properties[HTTPHeaderExecute] = strconv.Itoa(p.execute)
-				//time.Sleep(50*time.Millisecond)
 				log.Debugf("reply= %v", e.request)
-
 				e.request.Reply(reply)
 				e.request = nil
 				log.Debugf("********* Reply Replicas *********")
