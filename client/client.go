@@ -57,6 +57,8 @@ func main() {
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "streamlet":
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
+	case "streamletBFT":
+		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	default:
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	}

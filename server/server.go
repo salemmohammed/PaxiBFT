@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/salemmohammed/PaxiBFT/pbftBFT"
+	"github.com/salemmohammed/PaxiBFT/streamletBFT"
 	"github.com/salemmohammed/PaxiBFT/tendermint"
 	"sync"
 
@@ -40,6 +41,9 @@ func replica(id PaxiBFT.ID) {
 
 	case "streamlet":
 		streamlet.NewReplica(id,*delta).Run()
+
+	case "streamletBFT":
+		streamletBFT.NewReplica(id).Run()
 
 	case "tendermint":
 		tendermint.NewReplica(id).Run()
