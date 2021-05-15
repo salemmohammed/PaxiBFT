@@ -9,7 +9,9 @@ func init() {
 
 	gob.Register(Propose{})
 	gob.Register(Vote{})
+	gob.Register(ViewChange{})
 	gob.Register(ProposeAfterFailure{})
+
 
 }
 type Propose struct {
@@ -29,6 +31,15 @@ type ProposeAfterFailure struct {
 }
 func (m ProposeAfterFailure) String() string {
 	return fmt.Sprintf("ProposeAfterFailure {Ballot %v,Command %v, Slot %v}", m.Ballot, m.Request.Command, m.Slot)
+}
+type ViewChange struct {
+	Ballot 		PaxiBFT.Ballot
+	ID     		PaxiBFT.ID
+	Request 	PaxiBFT.Request
+	Slot 		int
+}
+func (m ViewChange) String() string {
+	return fmt.Sprintf("ViewChange {Ballot %v,Command %v, Slot %v}", m.Ballot, m.Request.Command, m.Slot)
 }
 
 type Vote struct {

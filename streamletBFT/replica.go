@@ -25,10 +25,11 @@ func NewReplica(id PaxiBFT.ID) *Replica {
 	r := new(Replica)
 	r.Node = PaxiBFT.NewNode(id)
 	r.StreamletBFT = NewStreamletBFT(r)
-	r.Register(PaxiBFT.Request{}, r.handleRequest)
-	r.Register(Propose{},         r.handlePropose)
-	r.Register(Vote{},  		  r.HandleVote)
-	r.Register(ProposeAfterFailure{},  		  r.HandleProposeAfterFailure)
+	r.Register(PaxiBFT.Request{}, 	  r.handleRequest)
+	r.Register(Propose{},         	  r.handlePropose)
+	r.Register(Vote{},  		  	  r.HandleVote)
+	r.Register(ViewChange{},  		  r.HandleViewChange)
+	r.Register(ProposeAfterFailure{}, r.HandleProposeAfterFailure)
 
 	return r
 }

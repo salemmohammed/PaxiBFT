@@ -99,16 +99,13 @@ func (p *StreamletBFT) handlePropose(m Propose) {
 	e = p.log[m.Slot]
 	e.Pstatus = PREPARED
 
-	w := (p.slot+1)%e.Q1.Total() + 1
+	w := (m.Slot+1)%e.Q1.Total() + 1
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
 
 	log.Debugf("Node_ID = %v", Node_ID)
 	log.Debugf("m.Request = %v", m.Request)
-
-	p.Forward(Node_ID, m.Request)
-
-	if p.ID() == Node_ID {
-		p.Broadcast(ProposeAfterFailure{
+	if p.ID() != Node_ID {
+		p.Send(Node_ID, ViewChange{
 			Ballot:  m.Ballot,
 			ID:      p.ID(),
 			Slot:    m.Slot,
@@ -116,8 +113,44 @@ func (p *StreamletBFT) handlePropose(m Propose) {
 		})
 	}
 }
+func (p *StreamletBFT) HandleViewChange(m ViewChange) {
+	log.Debugf("<--------------------HandleViewChange----------------->")
+	e, ok := p.log[m.Slot]
+	if !ok {
+		log.Debugf("Create the log")
+		p.log[m.Slot] = &entry{
+			Ballot:    m.Ballot,
+			request:   &m.Request,
+			Timestamp: time.Now(),
+			Q1:        PaxiBFT.NewQuorum(),
+			Q2:        PaxiBFT.NewQuorum(),
+			Q3:        PaxiBFT.NewQuorum(),
+			active:    false,
+			Leader:    false,
+			commit:    false,
+		}
+	}
+	e = p.log[m.Slot]
+	e.Pstatus = PREPARED
+	e.Q2.ACK(m.ID)
+	log.Debugf("majority = %v" , e.Q2.Size())
+	if e.Q2.Majority(){
+		e.Q2.Reset()
+		p.Broadcast(ProposeAfterFailure{
+			Ballot:  m.Ballot,
+			ID:      p.ID(),
+			Slot:    m.Slot,
+			Request: m.Request,
+		})
+	}
+	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED && e.Rstatus == RECEIVED{
+		log.Debug("late call")
+		e.commit = true
+		p.exec()
+	}
+}
 func (p *StreamletBFT) HandleProposeAfterFailure(m ProposeAfterFailure) {
-
+	log.Debugf("<--------------------HandleProposeAfterFailure----------------->")
 	e, ok := p.log[m.Slot]
 	if !ok {
 		log.Debugf("Create the log")
@@ -137,10 +170,10 @@ func (p *StreamletBFT) HandleProposeAfterFailure(m ProposeAfterFailure) {
 	e.Pstatus = PREPARED
 
 	p.Broadcast(Vote{
-		Ballot:  m.Ballot,
-		ID:      p.ID(),
-		Slot:    m.Slot,
-		Digest:  GetMD5Hash(&m.Request),
+			Ballot:  m.Ballot,
+			ID:      p.ID(),
+			Slot:    m.Slot,
+			Digest:  GetMD5Hash(&m.Request),
 	})
 	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED && e.Rstatus == RECEIVED{
 		log.Debug("late call")
@@ -148,6 +181,7 @@ func (p *StreamletBFT) HandleProposeAfterFailure(m ProposeAfterFailure) {
 		p.exec()
 	}
 }
+
 func (p *StreamletBFT) HandleVote(m Vote) {
 	log.Debugf("<--------------------HandleVote------------------>\n")
 	log.Debugf("m.slot %v", m.Slot)
@@ -177,7 +211,6 @@ func (p *StreamletBFT) HandleVote(m Vote) {
 			commit:    	false,
 		}
 	}
-	log.Debugf("log created")
 	e := p.log[m.Slot]
 	e.Q3.ACK(m.ID)
 	if e.Q3.Majority(){
