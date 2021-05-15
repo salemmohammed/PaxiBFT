@@ -3,7 +3,7 @@ package HotStuff
 import (
 	"encoding/gob"
 	"fmt"
-	"github.com/ailidani/paxi"
+	"github.com/salemmohammed/PaxiBFT"
 )
 func init() {
 	gob.Register(Prepare{})
@@ -20,86 +20,77 @@ func init() {
 
 }
 type Prepare struct {
-	Ballot 		paxi.Ballot
-	ID     		paxi.ID
-	Request 	paxi.Request
+	Ballot 		PaxiBFT.Ballot
+	ID     		PaxiBFT.ID
+	Request 	PaxiBFT.Request
 	Slot 		int
-	Command 	paxi.Command
-	View		paxi.View
+	Command 	PaxiBFT.Command
+	View		PaxiBFT.View
 	Leader      bool
 }
 func (m Prepare) String() string {
 	return fmt.Sprintf("Prepare {Ballot %v,Command %v, Slot %v, Leader %v}", m.Ballot, m.Command, m.Slot, m.Leader)
 }
 type ActPrepare struct {
-	Ballot 	paxi.Ballot
-	ID     	paxi.ID
-	Command paxi.Command
+	Ballot 	PaxiBFT.Ballot
+	ID     	PaxiBFT.ID
+	Digest  []byte
 	Slot 	int
 }
 func (m ActPrepare) String() string {
-	return fmt.Sprintf("ActPrepare {Ballot %v, Command %v, Slot %v}", m.Ballot,  m.Command,m.Slot)
+	return fmt.Sprintf("ActPrepare {Ballot %v, Digest %v, Slot %v}", m.Ballot,  m.Digest,m.Slot)
 }
 type PreCommit struct {
-	Ballot 		paxi.Ballot
-	ID     		paxi.ID
-	Request 	paxi.Request
+	Ballot 		PaxiBFT.Ballot
+	ID     		PaxiBFT.ID
+	Digest 	    []byte
 	Slot 		int
-	Command 	paxi.Command
-	View		paxi.View
 }
 func (m PreCommit) String() string {
-	return fmt.Sprintf("PreCommit {Ballot %v,Command %v, Slot %v}", m.Ballot, m.Command, m.Slot)
+	return fmt.Sprintf("PreCommit {Ballot %v,Digest %v, Slot %v}", m.Ballot, m.Digest, m.Slot)
 }
 type ActPreCommit struct {
-	Ballot 	paxi.Ballot
-	ID     	paxi.ID
-	Request paxi.Request
-	Command paxi.Command
+	Ballot 	PaxiBFT.Ballot
+	ID     	PaxiBFT.ID
+	Digest  []byte
 	Slot 	int
 }
 func (m ActPreCommit) String() string {
-	return fmt.Sprintf("ActPreCommit {Ballot %v, Command %v, Slot %v}", m.Ballot,  m.Command,m.Slot)
+	return fmt.Sprintf("ActPreCommit {Ballot %v, Digest %v, Slot %v}", m.Ballot,  m.Digest,m.Slot)
 }
 type Commit struct {
-	Ballot 	paxi.Ballot
-	ID     	paxi.ID
-	Request paxi.Request
-	Command paxi.Command
+	Ballot 	PaxiBFT.Ballot
+	ID     	PaxiBFT.ID
+	Digest  []byte
 	Slot 	int
-	Commit  bool
 }
 func (m Commit) String() string {
-	return fmt.Sprintf("Commit {Ballot %v, Command %v, Commit %v, Slot %v}", m.Ballot,  m.Command, m.Commit,m.Slot)
+	return fmt.Sprintf("Commit {Ballot %v, Digest %v, Slot %v}", m.Ballot,  m.Digest, m.Slot)
 }
 type ActCommit struct {
-	Ballot 	paxi.Ballot
-	ID     	paxi.ID
-	Request paxi.Request
-	Command paxi.Command
+	Ballot 	PaxiBFT.Ballot
+	ID     	PaxiBFT.ID
+	Digest  []byte
 	Slot 	int
 }
 func (m ActCommit) String() string {
-	return fmt.Sprintf("ActCommit {Ballot %v, Command %v,Slot %v}", m.Ballot,  m.Command,m.Slot)
+	return fmt.Sprintf("ActCommit {Ballot %v, Digest %v,Slot %v}", m.Ballot,  m.Digest,m.Slot)
 }
 type Decide struct {
-	Ballot 	paxi.Ballot
-	ID     	paxi.ID
-	Request paxi.Request
-	Command paxi.Command
+	Ballot 	PaxiBFT.Ballot
+	ID     	PaxiBFT.ID
+	Digest []byte
 	Slot 	int
 }
 func (m Decide) String() string {
-	return fmt.Sprintf("Decide {Ballot %v, Command %v, Slot %v}", m.Ballot,  m.Command,m.Slot)
+	return fmt.Sprintf("Decide {Ballot %v, Digest %v, Slot %v}", m.Ballot,m.Digest,m.Slot)
 }
 type ActDecide struct {
-	Ballot 	paxi.Ballot
-	ID     	paxi.ID
-	Request paxi.Request
-	Command paxi.Command
+	Ballot 	PaxiBFT.Ballot
+	ID     	PaxiBFT.ID
+	Digest  []byte
 	Slot 	int
-	Commit  bool
 }
 func (m ActDecide) String() string {
-	return fmt.Sprintf("ActDecide {Ballot %v, Command %v,Slot %v}", m.Ballot,  m.Command,m.Slot)
+	return fmt.Sprintf("ActDecide {Ballot %v, Digest %v,Slot %v}", m.Ballot,m.Digest,m.Slot)
 }

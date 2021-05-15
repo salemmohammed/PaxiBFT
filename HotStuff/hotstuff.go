@@ -1,112 +1,84 @@
 package HotStuff
 
 import (
-	//"container/list"
-	"github.com/ailidani/paxi"
-	"github.com/ailidani/paxi/log"
+	"crypto/md5"
+	"github.com/salemmohammed/PaxiBFT"
+	"github.com/salemmohammed/PaxiBFT/log"
 	"strconv"
 	"sync"
 	"time"
 )
-// log's entries
+type status int8
+const (
+	NONE status = iota
+	PREPREPARED
+	PREPARED
+	COMMITTED
+	RECEIVED
+	NEWCHAMGED
+)
+
 type entry struct {
-	Ballot     	  paxi.Ballot
+	Ballot     	  PaxiBFT.Ballot
 	commit     	  bool
-	request    	  *paxi.Request
+	request    	  *PaxiBFT.Request
 	Timestamp  	  time.Time
-	command    	  paxi.Command
-	Q1	  		  *paxi.Quorum
-	Q2    		  *paxi.Quorum
-	Q3    		  *paxi.Quorum
-	Q4    		  *paxi.Quorum
+	Q1	  		  *PaxiBFT.Quorum
+	Q2    		  *PaxiBFT.Quorum
+	Q3    		  *PaxiBFT.Quorum
+	Q4    		  *PaxiBFT.Quorum
 	active 		  bool
-	Precommitmsg  bool
-}
-type RequestSlot struct {
-	request    	  *paxi.Request
-	RecReqst	  *paxi.Quorum
-	commit     	  bool
-	count 		  int
-	Neibors  	  []paxi.ID
-	active 		  bool
-	Concurrency   int
-	Leader		  bool
-	slot		  int
+	leader        bool
+	Pstatus    status
+	Cstatus    status
+	Rstatus	   status
+	Digest     []byte
 }
 type HotStuff struct {
-	paxi.Node
+	PaxiBFT.Node
 	log      					map[int]*entry 				// log ordered by slot
-	logR      					map[int]*RequestSlot 		// log ordered by slot for receiving requests
-	config 						[]paxi.ID
+	config 						[]PaxiBFT.ID
 	execute 					int             			// next execute slot number
 	active  					bool		    			// active leader
-	ballot  					paxi.Ballot     			// highest ballot number
+	ballot  					PaxiBFT.Ballot     			// highest ballot number
 	slot    					int             			// highest slot number
-	quorum   					*paxi.Quorum    			// phase 1 quorum
-	Requests 					[]*paxi.Request 			// phase 1 pending requests
-	view     					paxi.View 	    			// view number
-	MyCommand       			paxi.Command
-	MyRequests					*paxi.Request
-	TemID						paxi.ID
-	RequestFlag	   				bool
-	c              				chan paxi.Request
-	done           				chan bool
-	ChooseID	  				paxi.ID
+	quorum   					*PaxiBFT.Quorum    			// phase 1 quorum
+	Requests 					[]*PaxiBFT.Request 			// phase 1 pending requests
+	c              				chan PaxiBFT.Request
 	count 		   				int
-	Created						bool
-	Leader						bool
-	EarlyPropose				bool
+	leader						bool
 	mux 						sync.Mutex
-	Plist						[]paxi.ID
-	Member                      *paxi.Memberlist
 }
-func NewHotStuff(n paxi.Node, options ...func(*HotStuff)) *HotStuff {
+
+func NewHotStuff(n PaxiBFT.Node, options ...func(*HotStuff)) *HotStuff {
 	p := &HotStuff{
 		Node:          	 	n,
-		log:           	 	make(map[int]*entry, paxi.GetConfig().BufferSize),
-		logR:           	make(map[int]*RequestSlot, paxi.GetConfig().BufferSize),
+		log:           	 	make(map[int]*entry, PaxiBFT.GetConfig().BufferSize),
 		slot:          	 	-1,
-		quorum:        	 	paxi.NewQuorum(),
-		Requests:      	 	make([]*paxi.Request, 0),
-		RequestFlag: 		false,
+		quorum:        	 	PaxiBFT.NewQuorum(),
+		Requests:      	 	make([]*PaxiBFT.Request, 0),
 		count:				0,
-		EarlyPropose:		false,
-		Leader:				false,
-		Plist:				make([]paxi.ID,0),
-		Member:         	paxi.NewMember(),
 	}
 	for _, opt := range options {
 		opt(p)
 	}
 	return p
 }
-// HandleRequest handles request and start phase 1 or phase 2
-func (p *HotStuff) HandleRequest(r paxi.Request, s int) {
+func GetMD5Hash(r *PaxiBFT.Request) []byte {
+	hasher := md5.New()
+	hasher.Write([]byte(r.Command.Value))
+	return []byte(hasher.Sum(nil))
+}
+func (p *HotStuff) HandleRequest(r PaxiBFT.Request) {
 	log.Debugf("\n<---R----HandleRequest----R------>\n")
 
-	p.logR[s].active = true
-	p.log[s] = &entry{
-		Ballot:    	p.ballot,
-		commit:    	false,
-		request:   	&r,
-		Timestamp: 	time.Now(),
-		Q1:			paxi.NewQuorum(),
-		Q2: 		paxi.NewQuorum(),
-		Q3: 		paxi.NewQuorum(),
-		Q4: 		paxi.NewQuorum(),
-		command:    r.Command,
-		active:     p.logR[s].active,
-	}
 	p.Broadcast(Prepare{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
-		Slot:       s,
-		Command:    p.log[s].command,
+		Slot:       p.slot,
 		Request:	r,
-		Leader:     true,
 	})
 }
-// handle propose from primary
 func (p *HotStuff) handlePrepare(m Prepare) {
 	log.Debugf("\n<-------P-------------handlePrepare--------P---------->\n")
 	log.Debugf("m.slot %v", m.Slot)
@@ -117,7 +89,8 @@ func (p *HotStuff) handlePrepare(m Prepare) {
 		log.Debugf("m is bigger m.Ballot:%v, p.ballot:%v", m.Ballot, p.ballot)
 		p.ballot = m.Ballot
 	}
-	_, ok := p.log[m.Slot]
+
+	e, ok := p.log[m.Slot]
 	if !ok {
 		log.Debugf("Create the log")
 		p.log[m.Slot] = &entry{
@@ -125,25 +98,17 @@ func (p *HotStuff) handlePrepare(m Prepare) {
 			commit:     false,
 			Timestamp:  time.Now(),
 			request:    &m.Request,
-			command:    m.Command,
 		}
 	}
 
-	e1, ok1 := p.logR[m.Slot]
-	if !ok1 {
-		p.logR[m.Slot] = &RequestSlot{
-			Leader:   false,
-		}
-	}
-	e1, ok1 = p.logR[m.Slot]
-	e1.Leader = false
+	e = p.log[m.Slot]
+	e.Digest = GetMD5Hash(&m.Request)
 
-	_, ok = p.log[m.Slot]
 	p.Send(m.ID, ActPrepare{
 		Ballot:     m.Ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
-		Command:    p.log[m.Slot].command,
+		Digest:     e.Digest,
 	})
 	log.Debugf("++++++++++++++++++++++++++ handlePropose Done ++++++++++++++++++++++++++")
 }
@@ -158,16 +123,17 @@ func (p *HotStuff) handleActPrepare(m ActPrepare){
 
 	e, ok := p.log[m.Slot]
 	if !ok{
+		log.Debugf("return")
 		return
 	}
 	e.Q1.ACK(m.ID)
-	if p.logR[m.Slot].active && e.Q1.Majority(){
+	if e.Q1.Majority(){
 		e.Q1.Reset()
 		p.Broadcast(PreCommit{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
-		Command:    m.Command,
+		Digest:    m.Digest,
 	})
 	}
 }
@@ -185,7 +151,7 @@ func (p *HotStuff) handlePreCommit(m PreCommit) {
 		Ballot:     p.ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
-		Command:    m.Command,
+		Digest:    m.Digest,
 	})
 }
 func (p *HotStuff) handleActPreCommit(m ActPreCommit) {
@@ -199,16 +165,17 @@ func (p *HotStuff) handleActPreCommit(m ActPreCommit) {
 	}
 	e, ok := p.log[m.Slot]
 	if !ok{
+		log.Debugf("Return")
 		return
 	}
 	e.Q2.ACK(m.ID)
-	if p.logR[m.Slot].active && e.Q2.Majority(){
+	if e.Q2.Majority(){
 		e.Q2.Reset()
 		p.Broadcast(Commit{
 			Ballot:     p.ballot,
 			ID:         p.ID(),
 			Slot:       m.Slot,
-			Command:    m.Command,
+			Digest:    m.Digest,
 		})
 	}
 }
@@ -224,7 +191,7 @@ func (p *HotStuff) handleCommit(m Commit) {
 		Ballot:  p.ballot,
 		ID:      p.ID(),
 		Slot:    m.Slot,
-		Command: m.Command,
+		Digest: m.Digest,
 	})
 }
 func (p *HotStuff) handleActCommit(m ActCommit) {
@@ -241,13 +208,13 @@ func (p *HotStuff) handleActCommit(m ActCommit) {
 		return
 	}
 	e.Q3.ACK(m.ID)
-	if p.logR[m.Slot].active && e.Q3.Majority(){
+	if e.Q3.Majority(){
 		e.Q3.Reset()
 		p.Broadcast(Decide{
 			Ballot:  p.ballot,
 			ID:      p.ID(),
 			Slot:    m.Slot,
-			Command: m.Command,
+			Digest: m.Digest,
 		})
 	}
 }
@@ -266,21 +233,13 @@ func (p *HotStuff) handleDecide(m Decide) {
 		log.Debugf("e, ok := p.log[m.Slot]")
 		return
 	}
-	_, ok1 := p.logR[m.Slot]
-	if !ok1{
-		log.Debugf("e1, ok1 := p.logR[m.Slot]")
-		return
-	}
-
 	p.Send(m.ID, ActDecide{
 			Ballot:  p.ballot,
 			ID:      p.ID(),
 			Slot:    m.Slot,
-			Command: m.Command,
+			Digest: m.Digest,
 		})
 	e.commit = true
-	//	//e1.Leader = false
-	//	log.Debugf("Start exec()")
 	p.exec()
 }
 
@@ -297,14 +256,9 @@ func (p *HotStuff) handleActDecide(m ActDecide) {
 		log.Debugf("failed p.log")
 		return
 	}
-	_, ok1 := p.logR[m.Slot]
-	if !ok1{
-		log.Debugf("failed p.logR[m.Slot]")
-		return
-	}
 	e.Q4.ACK(m.ID)
 	if e.Q4.Majority() && p.ID() == e.request.NodeID{
-		//e.Q4.Reset()
+		e.Q4.Reset()
 		e.commit = true
 		p.exec()
 	}
@@ -313,38 +267,27 @@ func (p *HotStuff) exec() {
 	for {
 		log.Debugf("in exece: %v", p.execute)
 		e, ok := p.log[p.execute]
-		if !ok {
-			log.Debugf("return")
-			return
-		}
-
 		if !ok || !e.commit {
 			log.Debugf("break")
 			break
 		}
 		log.Debugf("e.active %v", e.active)
-		// log.Debugf("Replica %s execute [s=%d, cmd=%v]", p.ID(), p.execute, e.command)
-		value := p.Execute(e.command)
+
+		value := p.Execute(e.request.Command)
 		if e.request != nil && e.active{
-			reply := paxi.Reply{
-				Command:    p.logR[p.execute].request.Command,
+			reply := PaxiBFT.Reply{
+				Command:    e.request.Command,
 				Value:      value,
 				Properties: make(map[string]string),
 			}
 			reply.Properties[HTTPHeaderSlot] = strconv.Itoa(p.execute)
 			reply.Properties[HTTPHeaderBallot] = e.Ballot.String()
 			reply.Properties[HTTPHeaderExecute] = strconv.Itoa(p.execute)
-
-			p.logR[p.execute].request.Reply(reply)
+			e.request.Reply(reply)
 			e.request = nil
-			e1, _ := p.logR[p.execute]
-			e1.Leader = false
-			e.active = false
 		}
 		// TODO clean up the log periodically
-		log.Debugf("Deletion")
 		delete(p.log, p.execute)
-		delete(p.logR, p.execute)
 		p.execute++
 	}
 }
