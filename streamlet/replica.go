@@ -20,7 +20,7 @@ const (
 	HTTPHeaderExecute    = "Execute"
 	HTTPHeaderInProgress = "Inprogress"
 )
-func NewReplica(id PaxiBFT.ID,delta int) *Replica {
+func NewReplica(id PaxiBFT.ID) *Replica {
 	log.Debugf("Replica started \n")
 	r := new(Replica)
 	r.Node = PaxiBFT.NewNode(id)

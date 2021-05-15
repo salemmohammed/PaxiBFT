@@ -1,5 +1,4 @@
 package HotStuff
-
 import (
 	"fmt"
 	"github.com/salemmohammed/PaxiBFT"
@@ -8,8 +7,6 @@ import (
 	"sync"
 	"time"
 )
-
-// Replica for one Tendermint instance
 type Replica struct {
 	PaxiBFT.Node
 	*HotStuff
@@ -38,23 +35,20 @@ func NewReplica(id PaxiBFT.ID) *Replica {
 	r.Register(ActCommit{},        r.handleActCommit)
 
 	r.Register(Decide{},        r.handleDecide)
-	r.Register(ActDecide{},     r.handleActDecide)
 
 	return r
 }
 func (p *Replica) handleRequest(m PaxiBFT.Request) {
-	log.Debugf("\n<-----------Leader of the Request----------->\n")
+	log.Debugf("<-----------handleRequest----------->")
 	if p.slot <= 0 {
 		fmt.Print("-------------------HotStuff-------------------------")
 	}
-
+	p.slot++
 	p.Requests = append(p.Requests, &m)
-
 	e, ok := p.log[p.slot]
 	if !ok {
 		p.log[p.slot] = &entry{
 			Ballot:    	p.ballot,
-			commit:    	false,
 			request:   	&m,
 			Timestamp: 	time.Now(),
 			Q1:			PaxiBFT.NewQuorum(),
@@ -63,22 +57,21 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 			Q4: 		PaxiBFT.NewQuorum(),
 			active:     false,
 			leader:     false,
+			commit:    	false,
 			Digest:     GetMD5Hash(&m),
 		}
 	}
 	e = p.log[p.slot]
-	log.Debugf("e.request= %v" , e.request)
 	e.request = &m
+	log.Debugf("e.request= %v" , e.request)
     e.Digest  = GetMD5Hash(&m)
 	w := p.slot % e.Q1.Total() + 1
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
 	log.Debugf("Node_ID = %v", Node_ID)
-
 	if Node_ID == p.ID(){
 		log.Debugf("leader")
 		e.active = true
 	}
-
 	if e.active == true {
 		e.leader = true
 		p.ballot.Next(p.ID())
@@ -87,9 +80,9 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 		e.Pstatus = PREPARED
 		p.HandleRequest(m)
 	}
-
 	e.Rstatus = RECEIVED
 	log.Debugf("e.Pstatus = %v", e.Pstatus)
+	log.Debugf("e.Cstatus = %v", e.Cstatus)
 	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED && e.Rstatus == RECEIVED{
 		log.Debug("late call")
 		e.commit = true

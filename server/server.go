@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/salemmohammed/PaxiBFT/HotStuff"
 	"github.com/salemmohammed/PaxiBFT/pbftBFT"
 	"github.com/salemmohammed/PaxiBFT/streamletBFT"
 	"github.com/salemmohammed/PaxiBFT/tendermint"
@@ -14,11 +15,9 @@ import (
 	"github.com/salemmohammed/PaxiBFT/tendStar"
 )
 
-var algorithm = flag.String("algorithm", "tendStar", "Distributed algorithm")
+var algorithm = flag.String("algorithm", "", "Distributed algorithm")
 var id = flag.String("id", "", "ID in format of Zone.Node.")
 var simulation = flag.Bool("sim", false, "simulation mode")
-var delta = flag.Int("delta", 1, "value of delta.")
-
 var master = flag.String("master", "", "Master address.")
 
 func replica(id PaxiBFT.ID) {
@@ -40,13 +39,16 @@ func replica(id PaxiBFT.ID) {
 		pbftBFT.NewReplica(id).Run()
 
 	case "streamlet":
-		streamlet.NewReplica(id,*delta).Run()
+		streamlet.NewReplica(id).Run()
 
 	case "streamletBFT":
 		streamletBFT.NewReplica(id).Run()
 
 	case "tendermint":
 		tendermint.NewReplica(id).Run()
+
+	case "hotstuff":
+		HotStuff.NewReplica(id).Run()
 
 	default:
 		panic("Unknown algorithm")

@@ -24,12 +24,9 @@ type Prepare struct {
 	ID     		PaxiBFT.ID
 	Request 	PaxiBFT.Request
 	Slot 		int
-	Command 	PaxiBFT.Command
-	View		PaxiBFT.View
-	Leader      bool
 }
 func (m Prepare) String() string {
-	return fmt.Sprintf("Prepare {Ballot %v,Command %v, Slot %v, Leader %v}", m.Ballot, m.Command, m.Slot, m.Leader)
+	return fmt.Sprintf("Prepare {Ballot %v,Request %v, Slot %v, ID %v}", m.Ballot, m.Request, m.Slot, m.ID)
 }
 type ActPrepare struct {
 	Ballot 	PaxiBFT.Ballot

@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"github.com/salemmohammed/PaxiBFT"
 	"github.com/salemmohammed/PaxiBFT/log"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -17,7 +16,6 @@ const (
 	RECEIVED
 	NEWCHAMGED
 )
-
 type entry struct {
 	Ballot     	  PaxiBFT.Ballot
 	commit     	  bool
@@ -49,7 +47,6 @@ type HotStuff struct {
 	leader						bool
 	mux 						sync.Mutex
 }
-
 func NewHotStuff(n PaxiBFT.Node, options ...func(*HotStuff)) *HotStuff {
 	p := &HotStuff{
 		Node:          	 	n,
@@ -70,8 +67,7 @@ func GetMD5Hash(r *PaxiBFT.Request) []byte {
 	return []byte(hasher.Sum(nil))
 }
 func (p *HotStuff) HandleRequest(r PaxiBFT.Request) {
-	log.Debugf("\n<---R----HandleRequest----R------>\n")
-
+	log.Debugf("<---R----HandleRequest----R------>")
 	p.Broadcast(Prepare{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
@@ -80,10 +76,9 @@ func (p *HotStuff) HandleRequest(r PaxiBFT.Request) {
 	})
 }
 func (p *HotStuff) handlePrepare(m Prepare) {
-	log.Debugf("\n<-------P-------------handlePrepare--------P---------->\n")
+	log.Debugf("<-------P-------------handlePrepare--------P---------->")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
-	log.Debugf("p.slots %v", p.slot)
 
 	if m.Ballot > p.ballot {
 		log.Debugf("m is bigger m.Ballot:%v, p.ballot:%v", m.Ballot, p.ballot)
@@ -94,16 +89,22 @@ func (p *HotStuff) handlePrepare(m Prepare) {
 	if !ok {
 		log.Debugf("Create the log")
 		p.log[m.Slot] = &entry{
-			Ballot:     p.ballot,
-			commit:     false,
-			Timestamp:  time.Now(),
-			request:    &m.Request,
+			Ballot:    	p.ballot,
+			request:   	&m.Request,
+			Timestamp: 	time.Now(),
+			Q1:			PaxiBFT.NewQuorum(),
+			Q2: 		PaxiBFT.NewQuorum(),
+			Q3: 		PaxiBFT.NewQuorum(),
+			Q4: 		PaxiBFT.NewQuorum(),
+			active:     false,
+			leader:     false,
+			commit:    	false,
+			Digest:     GetMD5Hash(&m.Request),
 		}
 	}
 
 	e = p.log[m.Slot]
-	e.Digest = GetMD5Hash(&m.Request)
-
+	e.Pstatus = PREPARED
 	p.Send(m.ID, ActPrepare{
 		Ballot:     m.Ballot,
 		ID:         p.ID(),
@@ -151,7 +152,7 @@ func (p *HotStuff) handlePreCommit(m PreCommit) {
 		Ballot:     p.ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
-		Digest:    m.Digest,
+		Digest:     m.Digest,
 	})
 }
 func (p *HotStuff) handleActPreCommit(m ActPreCommit) {
@@ -204,22 +205,26 @@ func (p *HotStuff) handleActCommit(m ActCommit) {
 	}
 	e, ok := p.log[m.Slot]
 	if !ok{
-		log.Debugf("Create the log")
+		log.Debugf("Return")
 		return
 	}
 	e.Q3.ACK(m.ID)
-	if e.Q3.Majority(){
+	if e.Q3.Majority() {
 		e.Q3.Reset()
 		p.Broadcast(Decide{
-			Ballot:  p.ballot,
-			ID:      p.ID(),
-			Slot:    m.Slot,
+			Ballot: p.ballot,
+			ID:     p.ID(),
+			Slot:   m.Slot,
 			Digest: m.Digest,
 		})
+		e.commit = true
+		if e.leader{
+			p.exec()
+		}
 	}
 }
 func (p *HotStuff) handleDecide(m Decide) {
-	log.Debugf("\n\n\n<---------V-----------handleDecide----------V-------->")
+	log.Debugf("<--------------------handleDecide------------------>")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 
@@ -230,61 +235,42 @@ func (p *HotStuff) handleDecide(m Decide) {
 
 	e, ok := p.log[m.Slot]
 	if !ok{
-		log.Debugf("e, ok := p.log[m.Slot]")
+		log.Debugf("Return")
 		return
 	}
-	p.Send(m.ID, ActDecide{
-			Ballot:  p.ballot,
-			ID:      p.ID(),
-			Slot:    m.Slot,
-			Digest: m.Digest,
-		})
 	e.commit = true
-	p.exec()
-}
-
-func (p *HotStuff) handleActDecide(m ActDecide) {
-	log.Debugf("\n\n<----------C----------handleActDecide--------C---------->")
-	log.Debugf("m.slot %v", m.Slot)
-	log.Debugf("sender %v", m.ID)
-	if m.Ballot > p.ballot {
-		log.Debugf("m.ballot is bigger")
-		p.ballot = m.Ballot
-	}
-	e, ok := p.log[m.Slot]
-	if !ok{
-		log.Debugf("failed p.log")
-		return
-	}
-	e.Q4.ACK(m.ID)
-	if e.Q4.Majority() && p.ID() == e.request.NodeID{
-		e.Q4.Reset()
-		e.commit = true
+	e.Cstatus = COMMITTED
+	if e.Rstatus == RECEIVED{
 		p.exec()
 	}
 }
 func (p *HotStuff) exec() {
+	log.Debugf("<--------------------exec()------------------>")
 	for {
-		log.Debugf("in exece: %v", p.execute)
+		log.Debugf("p.execute %v", p.execute)
 		e, ok := p.log[p.execute]
 		if !ok || !e.commit {
-			log.Debugf("break")
+			log.Debugf("Break")
 			break
 		}
-		log.Debugf("e.active %v", e.active)
-
 		value := p.Execute(e.request.Command)
-		if e.request != nil && e.active{
-			reply := PaxiBFT.Reply{
-				Command:    e.request.Command,
-				Value:      value,
-				Properties: make(map[string]string),
-			}
-			reply.Properties[HTTPHeaderSlot] = strconv.Itoa(p.execute)
-			reply.Properties[HTTPHeaderBallot] = e.Ballot.String()
-			reply.Properties[HTTPHeaderExecute] = strconv.Itoa(p.execute)
+		reply := PaxiBFT.Reply{
+			Command:    e.request.Command,
+			Value:      value,
+			Properties: make(map[string]string),
+		}
+
+		if e.request != nil && e.leader {
+			e.request.Reply(reply)
+			log.Debugf("********* Reply Primary *********")
+			e.request = nil
+		} else {
+			log.Debugf("********* Replica Request ********* ")
+			log.Debugf("reply= %v", e.request)
 			e.request.Reply(reply)
 			e.request = nil
+			log.Debugf("********* Reply Replicas *********")
+
 		}
 		// TODO clean up the log periodically
 		delete(p.log, p.execute)
