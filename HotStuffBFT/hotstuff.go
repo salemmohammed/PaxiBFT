@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"github.com/salemmohammed/PaxiBFT"
 	"github.com/salemmohammed/PaxiBFT/log"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -102,22 +103,46 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 			Digest:     GetMD5Hash(&m.Request),
 		}
 	}
-
 	e = p.log[m.Slot]
+
+	w := (m.Slot+1) % e.Q1.Total() + 1
+	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
+	log.Debugf("Node_ID = %v", Node_ID)
 	e.Pstatus = PREPARED
-	p.Send(m.ID, Viewchange{
-		Ballot:     m.Ballot,
-		ID:         p.ID(),
-		Slot:       m.Slot,
-		request:    m.Request,
-	})
+	if Node_ID != p.ID(){
+		log.Debugf("leader")
+		e.active = true
+
+		p.Send(m.ID, Viewchange{
+			Ballot:     m.Ballot,
+			ID:         p.ID(),
+			Slot:       m.Slot,
+			request:    m.Request,
+		})
+
+	}
 	log.Debugf("++++++++++++++++++++++++++ handlePropose Done ++++++++++++++++++++++++++")
 }
 func (p *HotStuffBFT) handleViewchange(m Viewchange){
-	p.Broadcast(AfterPrepare{})
+	log.Debugf("<---R----handleViewchange----R------>")
+	p.Broadcast(AfterPrepare{
+		Ballot:     p.ballot,
+		ID:         p.ID(),
+		Slot:       p.slot,
+		Request:	m.request,
+	})
 }
-func (p *HotStuffBFT) handleActPrepare(m ActPrepare){
-	log.Debugf("<---------V-----------handleActPrepare----------V-------->")
+func (p *HotStuffBFT) handleAfterPrepare(m AfterPrepare){
+	log.Debugf("<---R----handleAfterPrepare----R------>")
+	p.Send(m.ID, ActAfterPrepare{
+		Ballot:     m.Ballot,
+		ID:         p.ID(),
+		Slot:       m.Slot,
+		Digest:    GetMD5Hash(&m.Request),
+	})
+}
+func (p *HotStuffBFT) handleActAfterPrepare(m ActAfterPrepare){
+	log.Debugf("<---------V-----------handleActAfterPrepare----------V-------->")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 	if m.Ballot > p.ballot {
