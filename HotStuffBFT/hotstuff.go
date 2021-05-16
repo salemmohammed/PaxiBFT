@@ -108,12 +108,12 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 	w := (m.Slot+1) % e.Q1.Total() + 1
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
 	log.Debugf("Node_ID = %v", Node_ID)
-	e.Pstatus = PREPARED
+
 	if Node_ID != p.ID(){
 		log.Debugf("leader")
 		e.active = true
 
-		p.Send(m.ID, Viewchange{
+		p.Send(Node_ID, Viewchange{
 			Ballot:     m.Ballot,
 			ID:         p.ID(),
 			Slot:       m.Slot,
@@ -126,14 +126,22 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 func (p *HotStuffBFT) handleViewchange(m Viewchange){
 	log.Debugf("<---R----handleViewchange----R------>")
 	p.Broadcast(AfterPrepare{
-		Ballot:     p.ballot,
+		Ballot:     m.Ballot,
 		ID:         p.ID(),
-		Slot:       p.slot,
+		Slot:       m.Slot,
 		Request:	m.request,
 	})
 }
 func (p *HotStuffBFT) handleAfterPrepare(m AfterPrepare){
 	log.Debugf("<---R----handleAfterPrepare----R------>")
+
+	e, ok := p.log[m.Slot]
+	if !ok{
+		log.Debugf("return")
+		return
+	}
+
+	e.Pstatus = PREPARED
 	p.Send(m.ID, ActAfterPrepare{
 		Ballot:     m.Ballot,
 		ID:         p.ID(),
