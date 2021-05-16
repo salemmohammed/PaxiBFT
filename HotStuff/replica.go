@@ -63,7 +63,10 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	}
 	e = p.log[p.slot]
 	e.request = &m
+	log.Debugf("-------------------------")
 	log.Debugf("e.request= %v" , e.request)
+	log.Debugf("slot = %v", p.slot)
+	log.Debugf("-------------------------")
     e.Digest  = GetMD5Hash(&m)
 	w := p.slot % e.Q1.Total() + 1
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
@@ -80,6 +83,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 		e.Pstatus = PREPARED
 		p.HandleRequest(m)
 	}
+
 	e.Rstatus = RECEIVED
 	log.Debugf("e.Pstatus = %v", e.Pstatus)
 	log.Debugf("e.Cstatus = %v", e.Cstatus)

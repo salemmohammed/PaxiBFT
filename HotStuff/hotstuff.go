@@ -114,7 +114,7 @@ func (p *HotStuff) handlePrepare(m Prepare) {
 	log.Debugf("++++++++++++++++++++++++++ handlePropose Done ++++++++++++++++++++++++++")
 }
 func (p *HotStuff) handleActPrepare(m ActPrepare){
-	log.Debugf("\n\n\n<---------V-----------handleActPrepare----------V-------->")
+	log.Debugf("<---------V-----------handleActPrepare----------V-------->")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 	if m.Ballot > p.ballot {
@@ -139,7 +139,7 @@ func (p *HotStuff) handleActPrepare(m ActPrepare){
 	}
 }
 func (p *HotStuff) handlePreCommit(m PreCommit) {
-	log.Debugf("\n\n\n<---------V-----------handlePreCommit----------V-------->")
+	log.Debugf("<---------V-----------handlePreCommit----------V-------->")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 
@@ -156,7 +156,7 @@ func (p *HotStuff) handlePreCommit(m PreCommit) {
 	})
 }
 func (p *HotStuff) handleActPreCommit(m ActPreCommit) {
-	log.Debugf("\n\n\n<---------V-----------handleActPreCommit----------V-------->")
+	log.Debugf("<---------V-----------handleActPreCommit----------V-------->")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 
@@ -181,7 +181,7 @@ func (p *HotStuff) handleActPreCommit(m ActPreCommit) {
 	}
 }
 func (p *HotStuff) handleCommit(m Commit) {
-	log.Debugf("\n\n\n<---------V-----------handleCommit----------V-------->")
+	log.Debugf("<---------V-----------handleCommit----------V-------->")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 	if m.Ballot > p.ballot {
@@ -196,7 +196,7 @@ func (p *HotStuff) handleCommit(m Commit) {
 	})
 }
 func (p *HotStuff) handleActCommit(m ActCommit) {
-	log.Debugf("\n\n\n<---------V-----------handleActCommit----------V-------->")
+	log.Debugf("<---------V-----------handleActCommit----------V-------->")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 	if m.Ballot > p.ballot {
@@ -218,7 +218,8 @@ func (p *HotStuff) handleActCommit(m ActCommit) {
 			Digest: m.Digest,
 		})
 		e.commit = true
-		if e.leader{
+		e.Cstatus = COMMITTED
+		if e.Rstatus == RECEIVED && e.leader == true{
 			p.exec()
 		}
 	}
@@ -240,6 +241,8 @@ func (p *HotStuff) handleDecide(m Decide) {
 	}
 	e.commit = true
 	e.Cstatus = COMMITTED
+	log.Debugf("e.Pstatus = %v", e.Pstatus)
+	log.Debugf("e.Cstatus = %v", e.Cstatus)
 	if e.Rstatus == RECEIVED{
 		p.exec()
 	}
@@ -253,20 +256,27 @@ func (p *HotStuff) exec() {
 			log.Debugf("Break")
 			break
 		}
-		value := p.Execute(e.request.Command)
-		reply := PaxiBFT.Reply{
-			Command:    e.request.Command,
-			Value:      value,
-			Properties: make(map[string]string),
-		}
 
-		if e.request != nil && e.leader {
+		value := p.Execute(e.request.Command)
+
+		if e.request != nil && e.leader{
+			reply := PaxiBFT.Reply{
+				Command:    e.request.Command,
+				Value:      value,
+				Properties: make(map[string]string),
+			}
 			e.request.Reply(reply)
 			log.Debugf("********* Reply Primary *********")
 			e.request = nil
-		} else {
+		}
+		if e.request != nil && e.leader == false && e.Rstatus == RECEIVED{
 			log.Debugf("********* Replica Request ********* ")
 			log.Debugf("reply= %v", e.request)
+			reply := PaxiBFT.Reply{
+				Command:    e.request.Command,
+				Value:      value,
+				Properties: make(map[string]string),
+			}
 			e.request.Reply(reply)
 			e.request = nil
 			log.Debugf("********* Reply Replicas *********")
