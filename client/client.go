@@ -51,6 +51,8 @@ func main() {
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "hotstuff":
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
+	case "hotstuffBFT":
+		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "pbft":
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "pbftBFT":

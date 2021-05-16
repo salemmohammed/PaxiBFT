@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/salemmohammed/PaxiBFT/HotStuff"
+	"github.com/salemmohammed/PaxiBFT/HotStuffBFT"
 	"github.com/salemmohammed/PaxiBFT/pbftBFT"
 	"github.com/salemmohammed/PaxiBFT/streamletBFT"
 	"github.com/salemmohammed/PaxiBFT/tendermint"
@@ -49,6 +50,8 @@ func replica(id PaxiBFT.ID) {
 
 	case "hotstuff":
 		HotStuff.NewReplica(id).Run()
+	case "hotstuffBFT":
+		HotStuffBFT.NewReplica(id).Run()
 
 	default:
 		panic("Unknown algorithm")
