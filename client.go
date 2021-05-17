@@ -19,7 +19,7 @@ import (
 // Client interface provides get and put for key value store
 type Client interface {
 	PutMUL(Key, Value) error
-	Put(ID, Key, Value) error
+	Put(Key, Value) error
 }
 
 // AdminClient interface provides fault injection opeartion
@@ -67,9 +67,9 @@ func NewHTTPClient(id ID) *HTTPClient {
 
 	return c
 }
-func (c *HTTPClient) Put(id ID, key Key, value Value) error {
+func (c *HTTPClient) Put(key Key, value Value) error {
 	c.CID++
-	_, _, err := c.RESTPut(id, key, value)
+	_, _, err := c.RESTPut(c.ID, key, value)
 	return err
 }
 func (c *HTTPClient) PutMUL(key Key, value Value) error {

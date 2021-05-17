@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"github.com/salemmohammed/PaxiBFT/log"
+	"github.com/salemmohammed/PaxiBFT/paxos"
 
 	"github.com/salemmohammed/PaxiBFT"
 )
@@ -33,6 +34,7 @@ func (d *db) Write(k, v int) error {
 	value := make([]byte, binary.MaxVarintLen64)
 	binary.PutUvarint(value, uint64(v))
 	err := d.PutMUL(key, value)
+	//err := d.Put(key, value)
 	return err
 }
 
@@ -61,6 +63,8 @@ func main() {
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "streamletBFT":
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
+	case "paxos":
+		d.Client = paxos.NewClient(PaxiBFT.ID(*id))
 	default:
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	}

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/salemmohammed/PaxiBFT/HotStuff"
 	"github.com/salemmohammed/PaxiBFT/HotStuffBFT"
+	"github.com/salemmohammed/PaxiBFT/paxos"
 	"github.com/salemmohammed/PaxiBFT/pbftBFT"
 	"github.com/salemmohammed/PaxiBFT/streamletBFT"
 	"github.com/salemmohammed/PaxiBFT/tendermint"
@@ -32,32 +33,27 @@ func replica(id PaxiBFT.ID) {
 
 	case "tendStar":
 		tendStar.NewReplica(id).Run()
-
 	case "pbft":
 		pbft.NewReplica(id).Run()
-
 	case "pbftBFT":
 		pbftBFT.NewReplica(id).Run()
-
 	case "streamlet":
 		streamlet.NewReplica(id).Run()
-
 	case "streamletBFT":
 		streamletBFT.NewReplica(id).Run()
-
 	case "tendermint":
 		tendermint.NewReplica(id).Run()
-
 	case "hotstuff":
 		HotStuff.NewReplica(id).Run()
 	case "hotstuffBFT":
 		HotStuffBFT.NewReplica(id).Run()
+	case "paxos":
+		paxos.NewReplica(id).Run()
 
 	default:
 		panic("Unknown algorithm")
 	}
 }
-
 func main() {
 	PaxiBFT.Init()
 
