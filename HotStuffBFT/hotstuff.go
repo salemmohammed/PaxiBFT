@@ -69,7 +69,7 @@ func GetMD5Hash(r *PaxiBFT.Request) []byte {
 	return []byte(hasher.Sum(nil))
 }
 func (p *HotStuffBFT) HandleRequest(r PaxiBFT.Request) {
-	log.Debugf("<---R----HandleRequest----R------>")
+	log.Debugf("\n\n<---R----HandleRequest----R------>\n\n")
 	p.Broadcast(Prepare{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
@@ -78,20 +78,15 @@ func (p *HotStuffBFT) HandleRequest(r PaxiBFT.Request) {
 	})
 }
 func (p *HotStuffBFT) handlePrepare(m Prepare) {
-	log.Debugf("<-------P-------------handlePrepare--------P---------->")
+	log.Debugf("\n\n<-------P-------------handlePrepare--------P---------->\n\n")
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
-
-	if m.Ballot > p.ballot {
-		log.Debugf("m is bigger m.Ballot:%v, p.ballot:%v", m.Ballot, p.ballot)
-		p.ballot = m.Ballot
-	}
 
 	e, ok := p.log[m.Slot]
 	if !ok {
 		log.Debugf("Create the log")
 		p.log[m.Slot] = &entry{
-			Ballot:    	p.ballot,
+			Ballot:    	m.Ballot,
 			request:   	&m.Request,
 			Timestamp: 	time.Now(),
 			Q1:			PaxiBFT.NewQuorum(),
@@ -108,10 +103,9 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 
 	w := (m.Slot+1) % e.Q1.Total() + 1
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
-	log.Debugf("Node_ID = %v", Node_ID)
+	log.Debugf("\n\nNode_ID = %v", Node_ID)
 
 	if Node_ID != p.ID(){
-		log.Debugf("leader")
 		//e.active = true
 		log.Debugf("R %v", m.Request)
 		p.Send(Node_ID, Viewchange{
@@ -125,12 +119,12 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 	log.Debugf("++++++++++++++++++++++++++ handlePropose Done ++++++++++++++++++++++++++")
 }
 func (p *HotStuffBFT) handleViewchange(m Viewchange){
-	log.Debugf("<---R----handleViewchange----R------>")
+	log.Debugf("\n\n<---R----handleViewchange----R------>\n\n")
 	e, ok := p.log[m.Slot]
 	if !ok {
 		log.Debugf("Create the log")
 		p.log[m.Slot] = &entry{
-			Ballot:    	p.ballot,
+			Ballot:    	m.Ballot,
 			request:   	&m.Request,
 			Timestamp: 	time.Now(),
 			Q1:			PaxiBFT.NewQuorum(),
@@ -196,7 +190,7 @@ func (p *HotStuffBFT) handleActAfterPrepare(m ActAfterPrepare){
 	if e.Q1.Majority(){
 		e.Q1.Reset()
 		p.Broadcast(PreCommit{
-		Ballot:     p.ballot,
+		Ballot:     m.Ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
 		Digest:    m.Digest,
@@ -208,13 +202,8 @@ func (p *HotStuffBFT) handlePreCommit(m PreCommit) {
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 
-	if m.Ballot > p.ballot {
-		log.Debugf("m.ballot is bigger")
-		p.ballot = m.Ballot
-	}
-
 	p.Send(m.ID, ActPreCommit{
-		Ballot:     p.ballot,
+		Ballot:     m.Ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
 		Digest:     m.Digest,
@@ -284,7 +273,12 @@ func (p *HotStuffBFT) handleActCommit(m ActCommit) {
 		})
 		e.commit = true
 		e.Cstatus = COMMITTED
+		log.Debugf("e.leader = %v ", e.leader)
+		log.Debugf("e.Pstatus = %v", e.Pstatus)
+		log.Debugf("e.Cstatus = %v", e.Cstatus)
+
 		if e.Rstatus == RECEIVED && e.leader == true{
+			log.Debugf("p.exec()")
 			p.exec()
 		}
 	}
@@ -331,6 +325,7 @@ func (p *HotStuffBFT) exec() {
 				Properties: make(map[string]string),
 			}
 			e.request.Reply(reply)
+			log.Debugf("reply= %v", e.request)
 			log.Debugf("********* Reply Primary *********")
 			e.request = nil
 		}

@@ -68,6 +68,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	e = p.log[p.slot]
 	e.request = &m
 	log.Debugf("-------------------------")
+	log.Debugf("request= %v" , m)
 	log.Debugf("e.request= %v" , e.request)
 	log.Debugf("slot = %v", p.slot)
 	log.Debugf("-------------------------")
@@ -76,7 +77,9 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
 	log.Debugf("Node_ID = %v", Node_ID)
 	if Node_ID == p.ID(){
-		log.Debugf("leader")
+		log.Debugf("\n\n-------------\n\n")
+		log.Debugf("leader       = %v ", p.ID())
+		log.Debugf("\n\n-------------\n\n")
 		e.active = true
 	}
 	if e.active == true {
