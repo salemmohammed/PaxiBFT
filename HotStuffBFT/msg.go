@@ -35,11 +35,11 @@ func (m Prepare) String() string {
 type Viewchange struct {
 	Ballot 		PaxiBFT.Ballot
 	ID     		PaxiBFT.ID
-	request  	PaxiBFT.Request
+	Request  	PaxiBFT.Request
 	Slot 		int
 }
 func (m Viewchange) String() string {
-	return fmt.Sprintf("Viewchange {Ballot %v, Request %v, Slot %v}",m.Ballot,m.request,m.Slot)
+	return fmt.Sprintf("Viewchange {Ballot %v, Request %v, Slot %v}",m.Ballot,m.Request,m.Slot)
 }
 
 type AfterPrepare struct {

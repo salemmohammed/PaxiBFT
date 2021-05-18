@@ -124,6 +124,7 @@ func (c *HTTPClient) rest(id ID, key Key, value Value,count int) (Value, map[str
 	var body io.Reader
 	if value != nil {
 		method = http.MethodPut
+		log.Debugf("value=%v",value)
 		body = bytes.NewBuffer(value)
 		//log.Debugf("method=%v",method)
 	}

@@ -29,10 +29,11 @@ func (d *db) Stop() error {
 }
 
 
-func (d *db) Write(k, v int) error {
+func (d *db) Write(k int, v int) error {
 	key := PaxiBFT.Key(k)
 	value := make([]byte, binary.MaxVarintLen64)
-	binary.PutUvarint(value, uint64(v))
+	//value := make([]byte, 10000)
+	//binary.ByteOrder(v)
 	err := d.PutMUL(key, value)
 	//err := d.Put(key, value)
 	return err

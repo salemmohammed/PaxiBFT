@@ -11,7 +11,7 @@ import (
 // DB is general interface implemented by client to call client library
 type DB interface {
 	Init() error
-	Write(key, value int) error
+	Write(key int, value int) error
 	Stop() error
 }
 
@@ -105,7 +105,7 @@ func (b *Benchmark) Load() {
 
 	b.db.Init()
 	keys := make(chan int, b.Concurrency)
-	latencies := make(chan time.Duration, 1000)
+	latencies := make(chan time.Duration, 100)
 	defer close(latencies)
 	go b.collect(latencies)
 
@@ -254,14 +254,14 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 	var e time.Time
 	var v int
 	var err error
-	//var err1 []error
+	//data := make([]byte, 100)
 	for k := range keys {
 		op := new(operation)
 		if rand.Float64() < b.W {
 			v = rand.Int()
 			s = time.Now()
 			//time.Sleep(2 * time.Millisecond)
-			err = b.db.Write(k, v)
+			err = b.db.Write(k,v)
 			e = time.Now()
 			op.input = v
 		}

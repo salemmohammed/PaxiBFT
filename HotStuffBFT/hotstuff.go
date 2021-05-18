@@ -15,7 +15,7 @@ const (
 	PREPARED
 	COMMITTED
 	RECEIVED
-	NEWCHAMGED
+	NEWVIEW
 )
 type entry struct {
 	Ballot     	  PaxiBFT.Ballot
@@ -31,6 +31,7 @@ type entry struct {
 	Pstatus    status
 	Cstatus    status
 	Rstatus	   status
+	VC         status
 	Digest     []byte
 }
 type HotStuffBFT struct {
@@ -111,13 +112,13 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 
 	if Node_ID != p.ID(){
 		log.Debugf("leader")
-		e.active = true
-
+		//e.active = true
+		log.Debugf("R %v", m.Request)
 		p.Send(Node_ID, Viewchange{
 			Ballot:     m.Ballot,
 			ID:         p.ID(),
 			Slot:       m.Slot,
-			request:    m.Request,
+			Request:    m.Request,
 		})
 
 	}
@@ -125,12 +126,40 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 }
 func (p *HotStuffBFT) handleViewchange(m Viewchange){
 	log.Debugf("<---R----handleViewchange----R------>")
-	p.Broadcast(AfterPrepare{
-		Ballot:     m.Ballot,
-		ID:         p.ID(),
-		Slot:       m.Slot,
-		Request:	m.request,
-	})
+	e, ok := p.log[m.Slot]
+	if !ok {
+		log.Debugf("Create the log")
+		p.log[m.Slot] = &entry{
+			Ballot:    	p.ballot,
+			request:   	&m.Request,
+			Timestamp: 	time.Now(),
+			Q1:			PaxiBFT.NewQuorum(),
+			Q2: 		PaxiBFT.NewQuorum(),
+			Q3: 		PaxiBFT.NewQuorum(),
+			Q4: 		PaxiBFT.NewQuorum(),
+			active:     false,
+			leader:     false,
+			commit:    	false,
+			Digest:     GetMD5Hash(&m.Request),
+		}
+	}
+	e = p.log[m.Slot]
+	e.Q4.ACK(m.ID)
+	log.Debugf("e.Q4.Majority() = %v", e.Q4.Majority())
+	log.Debugf("e.VC = %v", e.VC)
+	log.Debugf("request = %v", m.Request)
+	if e.Q4.Majority() && e.VC != NEWVIEW{
+		e.Q4.Reset()
+		e.VC = NEWVIEW
+		e.leader = true
+		p.Broadcast(AfterPrepare{
+			Ballot:  m.Ballot,
+			ID:      p.ID(),
+			Slot:    m.Slot,
+			Request: m.Request,
+		})
+	}
+
 }
 func (p *HotStuffBFT) handleAfterPrepare(m AfterPrepare){
 	log.Debugf("<---R----handleAfterPrepare----R------>")
@@ -157,13 +186,13 @@ func (p *HotStuffBFT) handleActAfterPrepare(m ActAfterPrepare){
 		log.Debugf("m.ballot is bigger")
 		p.ballot = m.Ballot
 	}
-
 	e, ok := p.log[m.Slot]
 	if !ok{
 		log.Debugf("return")
 		return
 	}
 	e.Q1.ACK(m.ID)
+	e.Pstatus = PREPARED
 	if e.Q1.Majority(){
 		e.Q1.Reset()
 		p.Broadcast(PreCommit{

@@ -80,7 +80,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 		e.active = true
 	}
 	if e.active == true {
-		e.leader = true
+		//e.leader = true
 		p.ballot.Next(p.ID())
 		log.Debugf("p.ballot %v ", p.ballot)
 		e.Ballot = p.ballot
