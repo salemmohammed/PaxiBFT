@@ -98,6 +98,7 @@ func (p *Streamlet) handlePropose(m Propose) {
 	}
 	e = p.log[m.Slot]
 	e.Pstatus = PREPARED
+	time.Sleep(500 * time.Millisecond)
 	p.Broadcast(Vote{
 		Ballot:  p.ballot,
 		ID:      p.ID(),

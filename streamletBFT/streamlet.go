@@ -168,7 +168,7 @@ func (p *StreamletBFT) HandleProposeAfterFailure(m ProposeAfterFailure) {
 	}
 	e = p.log[m.Slot]
 	e.Pstatus = PREPARED
-
+	time.Sleep(500 * time.Millisecond)
 	p.Broadcast(Vote{
 			Ballot:  m.Ballot,
 			ID:      p.ID(),
