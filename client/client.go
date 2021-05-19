@@ -51,6 +51,8 @@ func main() {
 	switch *algorithm {
 	case "tendermint":
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
+	case "tendermintBFT":
+		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "tendStar":
 		d.Client = PaxiBFT.NewHTTPClient(PaxiBFT.ID(*id))
 	case "hotstuff":

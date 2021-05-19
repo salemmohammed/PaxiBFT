@@ -8,6 +8,7 @@ import (
 	"github.com/salemmohammed/PaxiBFT/pbftBFT"
 	"github.com/salemmohammed/PaxiBFT/streamletBFT"
 	"github.com/salemmohammed/PaxiBFT/tendermint"
+	"github.com/salemmohammed/PaxiBFT/tendermintBFT"
 	"sync"
 
 	"github.com/salemmohammed/PaxiBFT"
@@ -43,6 +44,8 @@ func replica(id PaxiBFT.ID) {
 		streamletBFT.NewReplica(id).Run()
 	case "tendermint":
 		tendermint.NewReplica(id).Run()
+	case "tendermintBFT":
+		tendermintBFT.NewReplica(id).Run()
 	case "hotstuff":
 		HotStuff.NewReplica(id).Run()
 	case "hotstuffBFT":
