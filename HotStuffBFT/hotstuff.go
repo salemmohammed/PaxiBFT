@@ -69,7 +69,7 @@ func GetMD5Hash(r *PaxiBFT.Request) []byte {
 	return []byte(hasher.Sum(nil))
 }
 func (p *HotStuffBFT) HandleRequest(r PaxiBFT.Request) {
-	log.Debugf("\n\n<---R----HandleRequest----R------>\n\n")
+	log.Debugf("<-------HandleRequest---------->")
 	p.Broadcast(Prepare{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
@@ -102,12 +102,11 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 	e = p.log[m.Slot]
 
 	w := (m.Slot+1) % e.Q1.Total() + 1
-	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
-	log.Debugf("\n\nNode_ID = %v", Node_ID)
 
+	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
+	log.Debugf("Node_ID = %v", Node_ID)
+	log.Debugf("\n")
 	if Node_ID != p.ID(){
-		//e.active = true
-		log.Debugf("R %v", m.Request)
 		p.Send(Node_ID, Viewchange{
 			Ballot:     m.Ballot,
 			ID:         p.ID(),
@@ -120,6 +119,7 @@ func (p *HotStuffBFT) handlePrepare(m Prepare) {
 }
 func (p *HotStuffBFT) handleViewchange(m Viewchange){
 	log.Debugf("\n\n<---R----handleViewchange----R------>\n\n")
+
 	e, ok := p.log[m.Slot]
 	if !ok {
 		log.Debugf("Create the log")
@@ -271,16 +271,18 @@ func (p *HotStuffBFT) handleActCommit(m ActCommit) {
 			Slot:   m.Slot,
 			Digest: m.Digest,
 		})
+
 		e.commit = true
 		e.Cstatus = COMMITTED
+
 		log.Debugf("e.leader = %v ", e.leader)
 		log.Debugf("e.Pstatus = %v", e.Pstatus)
 		log.Debugf("e.Cstatus = %v", e.Cstatus)
-
-		if e.Rstatus == RECEIVED && e.leader == true{
-			log.Debugf("p.exec()")
-			p.exec()
-		}
+		log.Debugf("e.Rstatus = %v", e.Rstatus)
+	}
+	if e.Rstatus == RECEIVED && e.leader == true{
+		log.Debugf("p.exec()")
+		p.exec()
 	}
 }
 func (p *HotStuffBFT) handleDecide(m Decide) {
@@ -294,15 +296,16 @@ func (p *HotStuffBFT) handleDecide(m Decide) {
 	}
 
 	e, ok := p.log[m.Slot]
-	if !ok{
+	if !ok {
 		log.Debugf("Return")
 		return
 	}
-	e.commit = true
 	e.Cstatus = COMMITTED
+	log.Debugf("e.Rstatus = %v", e.Rstatus)
 	log.Debugf("e.Pstatus = %v", e.Pstatus)
 	log.Debugf("e.Cstatus = %v", e.Cstatus)
 	if e.Rstatus == RECEIVED{
+		e.commit = true
 		p.exec()
 	}
 }
@@ -311,7 +314,7 @@ func (p *HotStuffBFT) exec() {
 	for {
 		log.Debugf("p.execute %v", p.execute)
 		e, ok := p.log[p.execute]
-		if !ok || !e.commit {
+		if !ok || !e.commit || e.Rstatus != RECEIVED{
 			log.Debugf("Break")
 			break
 		}

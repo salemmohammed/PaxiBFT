@@ -67,6 +67,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	}
 	e = p.log[p.slot]
 	e.request = &m
+
 	log.Debugf("-------------------------")
 	log.Debugf("request= %v" , m)
 	log.Debugf("e.request= %v" , e.request)
@@ -76,12 +77,14 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	w := p.slot % e.Q1.Total() + 1
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
 	log.Debugf("Node_ID = %v", Node_ID)
+
 	if Node_ID == p.ID(){
 		log.Debugf("\n\n-------------\n\n")
 		log.Debugf("leader       = %v ", p.ID())
 		log.Debugf("\n\n-------------\n\n")
 		e.active = true
 	}
+	e.Rstatus = RECEIVED
 	if e.active == true {
 		//e.leader = true
 		p.ballot.Next(p.ID())
@@ -90,10 +93,10 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 		e.Pstatus = PREPARED
 		p.HandleRequest(m)
 	}
-
-	e.Rstatus = RECEIVED
 	log.Debugf("e.Pstatus = %v", e.Pstatus)
 	log.Debugf("e.Cstatus = %v", e.Cstatus)
+	log.Debugf("e.Rstatus = %v", e.Rstatus)
+
 	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED && e.Rstatus == RECEIVED{
 		log.Debug("late call")
 		e.commit = true
