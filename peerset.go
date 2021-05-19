@@ -61,11 +61,7 @@ func (m *Memberlist) Addmember(id ID) {
 			m.Addrs = url
 			m.available[i] = true
 			m.size++
-
-			//first := ID(strconv.Itoa(1) + "." + strconv.Itoa(1))
-			//second := ID(strconv.Itoa(1) + "." + strconv.Itoa(2))
 			if id != i{
-			//if i != ID(id) && i != ID(first) && i != ID(second) {
 				m.Neibors = append(m.Neibors, ID(i))
 			}
 		}

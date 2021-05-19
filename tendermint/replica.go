@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"github.com/salemmohammed/PaxiBFT"
 	"github.com/salemmohammed/PaxiBFT/log"
-	"math"
 	"strconv"
-	"strings"
 	"sync"
-	)
+	"time"
+)
 
-// Replica for one Tendermint instance
 type Replica struct {
 	PaxiBFT.Node
 	*Tendermint
@@ -22,7 +20,6 @@ const (
 	HTTPHeaderExecute    = "Execute"
 	HTTPHeaderInProgress = "Inprogress"
 )
-// NewReplica generates new Pbft replica
 func NewReplica(id PaxiBFT.ID) *Replica {
 	log.Debugf("Replica started \n")
 	r := new(Replica)
@@ -38,76 +35,57 @@ func NewReplica(id PaxiBFT.ID) *Replica {
 	return r
 }
 func (p *Replica) handleRequest(m PaxiBFT.Request) {
-	log.Debugf("\n<-----------handleRequest----------->\n")
+	log.Debugf("<-----------handleRequest----------->")
 	if p.slot <= 0 {
 		fmt.Print("-------------------Tendermint-------------------------")
 	}
-	p.slot++ // slot number for every request
+	p.slot++
 	if p.slot % 1000 == 0 {
 		fmt.Print("p.slot", p.slot)
 	}
 
-
-	log.Debugf("Node's ID:%v, command:%v ", p.ID(), m.Command.Key)
-	//p.slot++
 	log.Debugf("p.slot %v", p.slot)
 	p.Member.Addmember(m.NodeID)
 	p.Requests = append(p.Requests, &m)
 
-
-	e, ok := p.logR[p.slot]
-	if !ok {
-		p.logR[p.slot] = &RequestSlot{
-			request:     &m,
-			slot:		 p.slot,
-			RecReqst:    PaxiBFT.NewQuorum(),
-			commit:      false,
-			count:       0,
-			Neibors:     make([]PaxiBFT.ID, 0),
-			active:      false,
-			Concurrency: 0,
-			Leader:      false,
+	e,ok := p.log[p.slot]
+	if !ok{
+		p.log[p.slot] = &entry{
+			Ballot:    	p.ballot,
+			commit:    	false,
+			request:   	&m,
+			Timestamp: 	time.Now(),
+			PR:			PaxiBFT.NewQuorum(),
+			PV: 		PaxiBFT.NewQuorum(),
+			PC: 		PaxiBFT.NewQuorum(),
+			active:    false,
+			Leader:    false,
 		}
 	}
-	e, ok = p.logR[p.slot]
+	e = p.log[p.slot]
+	e.request = &m
+	w := p.slot % e.PR.Total() + 1
+	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
+	log.Debugf("Node_ID = %v", Node_ID)
 
-	if e.Leader == false {
-		num := int(math.Mod(p.quorum.INC(), 2))
-		log.Debugf(" the number is %v", num)
-		num = num + 1
-		var s string = string(p.Tendermint.ID())
-		var b string
-		if strings.Contains(s, ".") {
-			split := strings.SplitN(s, ".", 2)
-			b = split[1]
-		} else {
-			b = s
-		}
-		i, _ := strconv.Atoi(b)
-		log.Debugf("<<<<<<<<<<<<<<<< num >>>>>>>>>>>>>>>>>> %v, i%v, p.slot:%v", num, i, p.slot)
-		if i == num {
-			e.Leader = true
-			p.ballot.Next(p.ID())
-			log.Debugf("p.ballot %v ", p.ballot)
-			log.Debugf("<<<<<<<<<<<<<<<<<< The leader for >>>>>>>>>>>>>>>>>>>>> %v ", i)
-			p.Tendermint.view.Next(p.ID())
-		}else{
-			e.request = &m
-		}
+	if Node_ID == p.ID(){
+		log.Debugf("leader")
+		time.Sleep(500 * time.Millisecond)
+		e.active = true
 	}
-	if e.Leader == true {
+	if e.active == true {
+		e.Leader = true
+		p.ballot.Next(p.ID())
+		log.Debugf("p.ballot %v ", p.ballot)
+		e.Ballot = p.ballot
+		e.Pstatus = PREPARED
+		p.HandleRequest(m)
+	}
+	e.Rstatus = RECEIVED
+	log.Debugf("e.Pstatus = %v", e.Pstatus)
+	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED && e.Rstatus == RECEIVED{
+		log.Debug("late call")
 		e.commit = true
-		log.Debugf("p.Requests[%v]: %v", e.slot, e.request)
-		p.Tendermint.HandleRequest(*e.request, e.slot)
-	} //else{
-	//	log.Debugf(" Late message and this will be executed")
-	//	p.HandlePreCommit(PreCommit{
-	//		Ballot:     p.ballot,
-	//		ID:         p.ID(),
-	//		Request:    m,
-	//		Command:   m.Command,
-	//		Slot:       p.slot,
-	//		Commit:     false,
-	//	})
-	//}
+		p.exec()
+	}
 }
