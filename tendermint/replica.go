@@ -40,6 +40,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 		fmt.Print("-------------------Tendermint-------------------------")
 	}
 	p.slot++
+	time.Sleep(500 * time.Millisecond)
 	if p.slot % 1000 == 0 {
 		fmt.Print("p.slot", p.slot)
 	}
@@ -70,7 +71,6 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 
 	if Node_ID == p.ID(){
 		log.Debugf("leader")
-		//time.Sleep(500 * time.Millisecond)
 		e.active = true
 	}
 	if e.active == true {
