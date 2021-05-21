@@ -35,8 +35,8 @@ func (d *db) Write(k int, v int) error {
 	//value := make([]byte, 10000)
 	//binary.ByteOrder(v)
 	binary.PutUvarint(value, uint64(v))
-	err := d.PutMUL(key, value)
-	//err := d.Put(key, value)
+	//err := d.PutMUL(key, value)
+	err := d.Put(key, value)
 	return err
 }
 
