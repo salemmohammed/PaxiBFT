@@ -370,7 +370,6 @@ func (p *Tendermint) HandlePreCommit(m PreCommit) {
 		e.commit = true
 		e.Ballot = p.ballot
 		log.Debugf("e.commit = %v", e.commit)
-		time.Sleep(50 * time.Millisecond)
 		p.exec()
 	}
 }
@@ -385,6 +384,7 @@ func (p *Tendermint) exec() {
 		}
 		value := p.Execute(e.request.Command)
 		if e.request != nil && e.active && e.Leader {
+			time.Sleep(50 * time.Millisecond)
 			reply := PaxiBFT.Reply{
 				Command:    e.request.Command,
 				Value:      value,
