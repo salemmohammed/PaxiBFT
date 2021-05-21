@@ -384,7 +384,6 @@ func (p *Tendermint) exec() {
 		}
 		value := p.Execute(e.request.Command)
 		if e.request != nil && e.active && e.Leader {
-			time.Sleep(50 * time.Millisecond)
 			reply := PaxiBFT.Reply{
 				Command:    e.request.Command,
 				Value:      value,
