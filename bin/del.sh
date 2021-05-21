@@ -8,5 +8,7 @@ kill -9 $(lsof -i:1741 -t)
 kill -9 $(lsof -i:1742 -t)
 kill -9 $(lsof -i:1743 -t)
 kill -9 $(lsof -i:1744 -t)
+kill -9 $(lsof -i:1745 -t)
+kill -9 $(lsof -i:1746 -t)
 rm client* server* cmd history* latency
 
