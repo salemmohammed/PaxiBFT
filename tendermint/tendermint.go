@@ -370,6 +370,7 @@ func (p *Tendermint) HandlePreCommit(m PreCommit) {
 		e.commit = true
 		e.Ballot = p.ballot
 		log.Debugf("e.commit = %v", e.commit)
+		time.Sleep(50 * time.Millisecond)
 		p.exec()
 	}
 }
