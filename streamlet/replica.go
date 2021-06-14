@@ -62,10 +62,11 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
 	log.Debugf("Node_ID = %v", Node_ID)
 
+
+	time.Sleep(3 * time.Millisecond)
 	if Node_ID == p.ID(){
 		log.Debugf("leader")
 		//time.Sleep(50 * time.Millisecond)
-		time.Sleep(3 * time.Millisecond)
 		e.active = true
 	}
 
