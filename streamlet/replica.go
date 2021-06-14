@@ -58,14 +58,14 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	e = p.log[p.slot]
 	log.Debugf("e.request= %v" , e.request)
 	e.request = &m
-	w := p.slot % e.Q1.Total() + 1
-	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
+	//w := p.slot % e.Q1.Total() + 1
+	//Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
+	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(1))
 	log.Debugf("Node_ID = %v", Node_ID)
 
-
-	time.Sleep(3 * time.Millisecond)
 	if Node_ID == p.ID(){
 		log.Debugf("leader")
+		time.Sleep(3 * time.Millisecond)
 		//time.Sleep(50 * time.Millisecond)
 		e.active = true
 	}
