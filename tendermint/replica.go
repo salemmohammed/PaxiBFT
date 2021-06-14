@@ -71,7 +71,8 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	if Node_ID == p.ID(){
 		log.Debugf("leader")
 		e.active = true
-		time.Sleep(50 * time.Millisecond)
+		//time.Sleep(50 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 	}
 	if e.active == true {
 		e.Leader = true
