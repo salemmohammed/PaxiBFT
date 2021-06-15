@@ -68,13 +68,10 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	log.Debugf("slot = %v", p.slot)
 	log.Debugf("-------------------------")
     e.Digest  = GetMD5Hash(&m)
-	//w := p.slot % e.Q1.Total() + 1
-	//Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
-	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(1))
-	Node_ID1 := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(2))
-	//Node_ID2 := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(3))
+	w := p.slot % e.Q1.Total()/2 + 1
+	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
 	log.Debugf("Node_ID = %v", Node_ID)
-	if Node_ID == p.ID()|| Node_ID1 == p.ID(){
+	if Node_ID == p.ID() {
 		log.Debugf("leader")
 		e.active = true
 	}
