@@ -38,6 +38,9 @@ func (q *Quorum) ACK(id ID) {
 func (q *Quorum) Total() int {
 	return config.n
 }
+func (q *Quorum) Total1() int {
+	return config.Benchmark.Concurrency
+}
 // NACK adds id to quorum nack records
 func (q *Quorum) NACK(id ID) {
 	if !q.nacks[id] {

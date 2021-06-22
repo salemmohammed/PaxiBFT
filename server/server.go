@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/salemmohammed/PaxiBFT/HotStuff"
 	"github.com/salemmohammed/PaxiBFT/HotStuffBFT"
+	"github.com/salemmohammed/PaxiBFT/HotStuff_SL"
 	"github.com/salemmohammed/PaxiBFT/paxos"
 	"github.com/salemmohammed/PaxiBFT/pbftBFT"
 	"github.com/salemmohammed/PaxiBFT/streamletBFT"
@@ -48,6 +49,8 @@ func replica(id PaxiBFT.ID) {
 		tendermintBFT.NewReplica(id).Run()
 	case "hotstuff":
 		HotStuff.NewReplica(id).Run()
+	case "HotStuff_SL":
+		HotStuff_SL.NewReplica(id).Run()
 	case "hotstuffBFT":
 		HotStuffBFT.NewReplica(id).Run()
 	case "paxos":
