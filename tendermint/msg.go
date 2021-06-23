@@ -8,6 +8,7 @@ func init() {
 	gob.Register(Propose{})
 	gob.Register(PreVote{})
 	gob.Register(PreCommit{})
+	gob.Register(RoundRobin{})
 }
 type Propose struct {
 	Ballot 		PaxiBFT.Ballot
@@ -39,4 +40,13 @@ type PreCommit struct {
 }
 func (m PreCommit) String() string {
 	return fmt.Sprintf("PreCommit {Ballot %v,Commit %v, Slot %v, ID_LIST_PC.AID %v}", m.Ballot, m.Commit,m.Slot, m.ID_LIST_PC.AID)
+}
+type RoundRobin struct {
+	Slot     		int
+	//Id              PaxiBFT.ID
+	Request         PaxiBFT.Request
+	Id              PaxiBFT.ID
+}
+func (m RoundRobin) String() string {
+	return fmt.Sprintf("RoundRobin {slot %v Request %v Id %v}", m.Slot, m.Request,m.Id)
 }

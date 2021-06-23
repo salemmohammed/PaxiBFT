@@ -9,6 +9,7 @@ func init() {
 
 	gob.Register(Propose{})
 	gob.Register(Vote{})
+	gob.Register(RoundRobin{})
 
 }
 type Propose struct {
@@ -29,4 +30,13 @@ type Vote struct {
 }
 func (m Vote) String() string {
 	return fmt.Sprintf("Vote {Ballot %v, ID %v,Slot %v, Digest %v,}", m.Ballot, m.ID,m.Slot,m.Digest)
+}
+type RoundRobin struct {
+	Slot     		int
+	//Id              PaxiBFT.ID
+	Request         PaxiBFT.Request
+	Id              PaxiBFT.ID
+}
+func (m RoundRobin) String() string {
+	return fmt.Sprintf("RoundRobin {slot %v Request %v Id %v}", m.Slot, m.Request,m.Id)
 }

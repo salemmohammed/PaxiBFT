@@ -3,6 +3,7 @@ package tendermint
 import (
 	"github.com/salemmohammed/PaxiBFT"
 	"github.com/salemmohammed/PaxiBFT/log"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -30,6 +31,11 @@ type entry struct {
 	Rstatus       status
 	Cstatus       status
 	VC            status
+	Sent          bool
+	MyTurn        bool
+	Node_ID     PaxiBFT.ID
+	Slot         int
+
 }
 
 type Tendermint struct {
@@ -48,6 +54,10 @@ type Tendermint struct {
 	EarlyPropose bool
 	mux          sync.Mutex
 	Plist        []PaxiBFT.ID
+	Sent          bool
+	MyTurn        bool
+	Node_ID     PaxiBFT.ID
+
 }
 func NewTendermint(n PaxiBFT.Node, options ...func(*Tendermint)) *Tendermint {
 	p := &Tendermint{
@@ -68,14 +78,14 @@ func NewTendermint(n PaxiBFT.Node, options ...func(*Tendermint)) *Tendermint {
 	}
 	return p
 }
-func (p *Tendermint) HandleRequest(r PaxiBFT.Request) {
+func (p *Tendermint) HandleRequest(r PaxiBFT.Request, slot int,total int) {
 	log.Debugf("<---R----HandleRequest----R------>\n")
 
 	p.Member.Addmember(r.NodeID)
 	log.Debugf("Nighbors %v", p.Member.Neibors)
 
 	p.count = 0
-	e := p.log[p.slot]
+	e := p.log[slot]
 	e.PR.AID_ID(p.ID())
 
 	for _, v := range p.Member.Neibors {
@@ -88,7 +98,7 @@ func (p *Tendermint) HandleRequest(r PaxiBFT.Request) {
 			Ballot:     p.ballot,
 			ID:         p.ID(),
 			Request:    r,
-			Slot:       p.slot,
+			Slot:       slot,
 			ID_LIST_PR: *e.PR,
 		})
 
@@ -96,6 +106,14 @@ func (p *Tendermint) HandleRequest(r PaxiBFT.Request) {
 			break
 		}
 	}
+	w := ((slot % total + 1) + 1)
+	if w > total{
+		w = (w % total)
+	}
+	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
+	log.Debugf("---Node_ID--- %v", Node_ID)
+	p.Send(Node_ID, RoundRobin{Slot: slot+1, Request: r, Id: p.ID()})
+	log.Debugf("<---End----HandleRequest----End------>")
 	log.Debugf("e.PR.ID : %v", e.PR.AID)
 }
 func (p *Tendermint) handlePropose(m Propose) {

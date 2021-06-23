@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"github.com/salemmohammed/PaxiBFT"
 	"github.com/salemmohammed/PaxiBFT/log"
+	"strconv"
 	"time"
 )
 
@@ -30,6 +31,9 @@ type entry struct {
 	Pstatus    status
 	Cstatus    status
 	Rstatus	   status
+	Node_ID     PaxiBFT.ID
+	Sent         bool
+	MyTurn      bool
 }
 
 type Streamlet struct {
@@ -43,6 +47,8 @@ type Streamlet struct {
 	MyRequests					*PaxiBFT.Request
 	Leader						bool
 	Delta 						int
+	Node_ID                     PaxiBFT.ID
+	Sent                        bool
 }
 func NewStreamlet(n PaxiBFT.Node, options ...func(*Streamlet)) *Streamlet {
 	p := &Streamlet{
@@ -65,15 +71,25 @@ func GetMD5Hash(r *PaxiBFT.Request) []byte {
 	return []byte(hasher.Sum(nil))
 }
 
-func (p *Streamlet) HandleRequest(r PaxiBFT.Request) {
+func (p *Streamlet) HandleRequest(r PaxiBFT.Request, slot int,total int) {
 	log.Debugf("\n<---R----HandleRequest----R------>\n")
 
 	p.Broadcast(Propose{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
-		Slot: 		p.slot,
+		Slot: 		slot,
 		Request:    r,
 	})
+
+	w := ((slot % total + 1) + 1)
+	if w > total{
+		w = (w % total)
+	}
+	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
+	log.Debugf("---Node_ID--- %v", Node_ID)
+	p.Send(Node_ID, RoundRobin{Slot: slot+1, Request: r, Id: p.ID()})
+	log.Debugf("<---End----HandleRequest----End------>")
+
 }
 func (p *Streamlet) handlePropose(m Propose) {
 	log.Debugf("<--------------------handlePropose----------------->\n")
