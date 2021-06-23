@@ -13,6 +13,7 @@ func init() {
 	gob.Register(ActPropose{})
 	gob.Register(ActPreCommit{})
 	gob.Register(ActPreVote{})
+	gob.Register(RoundRobin{})
 
 }
 // Propose
@@ -21,11 +22,10 @@ type Propose struct {
 	ID     		PaxiBFT.ID
 	Request 	PaxiBFT.Request
 	Slot 		int
-	Command 	PaxiBFT.Command
 	View		PaxiBFT.View
 }
 func (m Propose) String() string {
-	return fmt.Sprintf("Propose {Ballot %v,Command %v, Slot %v}", m.Ballot, m.Command, m.Slot)
+	return fmt.Sprintf("Propose {Ballot %v,request %v, Slot %v}", m.Ballot, m.Request, m.Slot)
 }
 // PreVote
 type PreVote struct {
@@ -33,54 +33,58 @@ type PreVote struct {
 	ID     	PaxiBFT.ID
 	Request PaxiBFT.Request
 	Slot 	int
-	Command PaxiBFT.Command
 	View	PaxiBFT.View
 }
 func (m PreVote) String() string {
-	return fmt.Sprintf("PreVote {Ballot %v,ID %v,Command %v, Slot %v}", m.Ballot, m.ID, m.Command, m.Slot)
+	return fmt.Sprintf("PreVote {Ballot %v,ID %v,Request %v, Slot %v}", m.Ballot, m.ID, m.Request, m.Slot)
 }
 // PreCommit  message
 type PreCommit struct {
 	Ballot 	PaxiBFT.Ballot
 	ID     	PaxiBFT.ID
 	Request PaxiBFT.Request
-	Command PaxiBFT.Command
 	Slot 	int
 	Commit  bool
 }
 func (m PreCommit) String() string {
-	return fmt.Sprintf("PreCommit {Ballot %v, Command %v, Commit %v, Slot %v}", m.Ballot,  m.Command, m.Commit,m.Slot)
+	return fmt.Sprintf("PreCommit {Ballot %v, Command %v, Request %v, Slot %v}", m.Ballot,  m.Request, m.Commit,m.Slot)
 }
 // ActPropose  message
 type ActPropose struct {
 	Ballot 	PaxiBFT.Ballot
 	ID     	PaxiBFT.ID
 	Request PaxiBFT.Request
-	Command PaxiBFT.Command
 	Slot 	int
 }
 func (m ActPropose) String() string {
-	return fmt.Sprintf("ActPropose {Ballot %v, Command %v, Slot %v}", m.Ballot,  m.Command,m.Slot)
+	return fmt.Sprintf("ActPropose {Ballot %v, Reqeust %v, Slot %v}", m.Ballot,  m.Request,m.Slot)
 }
 // ActPropose  message
 type ActPreCommit struct {
 	Ballot 	PaxiBFT.Ballot
 	ID     	PaxiBFT.ID
 	Request PaxiBFT.Request
-	Command PaxiBFT.Command
 	Slot 	int
 }
 func (m ActPreCommit) String() string {
-	return fmt.Sprintf("ActPreCommit {Ballot %v, Command %v,Slot %v}", m.Ballot,  m.Command,m.Slot)
+	return fmt.Sprintf("ActPreCommit {Ballot %v, Request %v,Slot %v}", m.Ballot,  m.Request,m.Slot)
 }
 // ActPropose  message
 type ActPreVote struct {
 	Ballot 	PaxiBFT.Ballot
 	ID     	PaxiBFT.ID
 	Request PaxiBFT.Request
-	Command PaxiBFT.Command
 	Slot 	int
 }
 func (m ActPreVote) String() string {
-	return fmt.Sprintf("ActPreVote {Ballot %v, Command %v, Slot %v}", m.Ballot,  m.Command,m.Slot)
+	return fmt.Sprintf("ActPreVote {Ballot %v, Request %v, Slot %v}", m.Ballot,  m.Request,m.Slot)
+}
+type RoundRobin struct {
+	Slot     		int
+	//Id              PaxiBFT.ID
+	Request         PaxiBFT.Request
+	Id              PaxiBFT.ID
+}
+func (m RoundRobin) String() string {
+	return fmt.Sprintf("RoundRobin {slot %v Request %v Id %v}", m.Slot, m.Request,m.Id)
 }

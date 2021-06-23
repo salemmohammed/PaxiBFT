@@ -5,10 +5,19 @@ import (
 	"github.com/salemmohammed/PaxiBFT"
 	"github.com/salemmohammed/PaxiBFT/log"
 	"strconv"
-	"time"
 	"sync"
+	"time"
 )
 // log's entries
+type status int8
+const (
+	NONE status = iota
+	PREPREPARED
+	PREPARED
+	COMMITTED
+	RECEIVED
+	NEWCHAMGED
+)
 type entry struct {
 
 	Ballot     	  PaxiBFT.Ballot
@@ -24,19 +33,15 @@ type entry struct {
 	active 		  bool
 	Precommitmsg  bool
 
-}
-
-type RequestSlot struct {
-
-	request    	  *PaxiBFT.Request
-	RecReqst	  *PaxiBFT.Quorum
-	commit     	  bool
-	count 		  int
-	Neibors  	  []PaxiBFT.ID
-	active 		  bool
-	Concurrency   int
 	Leader		  bool
-	slot		  int
+
+	MyTurn        bool
+	Node_ID       PaxiBFT.ID
+	Pstatus    status
+	Cstatus    status
+	Rstatus	   status
+	Slot       int
+	Sent        bool
 
 }
 
@@ -44,7 +49,6 @@ type Tendermint struct {
 
 	PaxiBFT.Node
 	log      					map[int]*entry 				// log ordered by slot
-	logR      					map[int]*RequestSlot 		// log ordered by slot for receiving requests
 	config 						[]PaxiBFT.ID
 	execute 					int             			// next execute slot number
 	active  					bool		    			// active leader
@@ -68,6 +72,9 @@ type Tendermint struct {
 	mux 						sync.Mutex
 	Plist						[]PaxiBFT.ID
 
+	Sent          				bool
+	MyTurn        				bool
+	Node_ID                     PaxiBFT.ID
 }
 // NewPaxos creates new paxos instance
 func NewTendermint(n PaxiBFT.Node, options ...func(*Tendermint)) *Tendermint {
@@ -75,7 +82,7 @@ func NewTendermint(n PaxiBFT.Node, options ...func(*Tendermint)) *Tendermint {
 	p := &Tendermint{
 		Node:          	 	n,
 		log:           	 	make(map[int]*entry, PaxiBFT.GetConfig().BufferSize),
-		logR:           	make(map[int]*RequestSlot, PaxiBFT.GetConfig().BufferSize),
+
 		slot:          	 	-1,
 		quorum:        	 	PaxiBFT.NewQuorum(),
 		Requests:      	 	make([]*PaxiBFT.Request, 0),
@@ -93,33 +100,27 @@ func NewTendermint(n PaxiBFT.Node, options ...func(*Tendermint)) *Tendermint {
 
 }
 // HandleRequest handles request and start phase 1 or phase 2
-func (p *Tendermint) HandleRequest(r PaxiBFT.Request, s int) {
+func (p *Tendermint) HandleRequest(r PaxiBFT.Request, s int, total int) {
 
 	log.Debugf("\n<---R----HandleRequest----R------>\n")
 	log.Debugf("Sender ID %v, slot=%v", r.NodeID, s)
 
-	p.logR[s].active = true
-
-	p.log[s] = &entry{
-		Ballot:    	p.ballot,
-		commit:    	false,
-		request:   	&r,
-		Timestamp: 	time.Now(),
-		Q1:			PaxiBFT.NewQuorum(),
-		Q2: 		PaxiBFT.NewQuorum(),
-		Q3: 		PaxiBFT.NewQuorum(),
-		command:    r.Command,
-		active:     p.logR[s].active,
-	}
-
 	p.Broadcast(Propose{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
-		Request:    *p.log[s].request,
+		Request:    r,
 		View:       p.view,
 		Slot:       s,
-		Command:    p.log[s].command,
 	})
+
+	w := ((s % total + 1) + 1)
+	if w > total{
+		w = (w % total)
+	}
+	Node_ID := PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
+	log.Debugf("---Node_ID--- %v", Node_ID)
+	p.Send(Node_ID, RoundRobin{Slot: s+1, Request: r, Id: p.ID()})
+	log.Debugf("<---End----HandleRequest----End------>")
 }
 // handle propose from primary
 func (p *Tendermint) handlePropose(m Propose) {
@@ -130,24 +131,30 @@ func (p *Tendermint) handlePropose(m Propose) {
 		log.Debugf("m is bigger m.Ballot:%v, p.ballot:%v", m.Ballot, p.ballot)
 		p.ballot = m.Ballot
 	}
-	_, ok := p.log[m.Slot]
+	e, ok := p.log[m.Slot]
 	if !ok {
 		log.Debugf("Create the log")
 		p.log[m.Slot] = &entry{
-			Ballot:     p.ballot,
-			commit:     false,
-			request:    &m.Request,
-			Timestamp:  time.Now(),
-			command:    m.Command,
+			Ballot:    	p.ballot,
+			request:   	&m.Request,
+			Timestamp: 	time.Now(),
+			Q1:			PaxiBFT.NewQuorum(),
+			Q2: 		PaxiBFT.NewQuorum(),
+			Q3: 		PaxiBFT.NewQuorum(),
+			active:     false,
+			Leader:		false,
+			commit:    	false,
+			Sent:       false,
+			MyTurn:     false,
+			Slot:       p.slot,
 		}
 	}
-	_, ok = p.log[m.Slot]
+	e = p.log[m.Slot]
 	p.Send(m.ID, ActPropose{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
-		Request:    m.Request,
-		Command:    m.Command,
+		Request:    *e.request,
 	})
 	log.Debugf("++++++++++++++++++++++++++ handlePropose Done ++++++++++++++++++++++++++")
 }
@@ -165,14 +172,13 @@ func (p *Tendermint) HandleActPropose(m ActPropose) {
 		return
 	}
 	e.Q1.ACK(m.ID)
-	if p.logR[m.Slot].active && e.Q1.Majority(){
+	if e.active && e.Q1.Majority(){
 		e.Q1.Reset()
 		p.Broadcast(PreVote{
 		Ballot:     p.ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
 		Request:    m.Request,
-		Command:    m.Command,
 	})
 }
 }
@@ -192,7 +198,6 @@ func (p *Tendermint) HandlePreVote(m PreVote) {
 		ID:         p.ID(),
 		Slot:       m.Slot,
 		Request:    m.Request,
-		Command:    m.Command,
 	})
 }
 
@@ -210,14 +215,13 @@ func (p *Tendermint) HandleActPreVote(m ActPreVote) {
 		return
 	}
 	e.Q2.ACK(m.ID)
-	if p.logR[m.Slot].active && e.Q2.Majority(){
+	if e.active && e.Q2.Majority(){
 		e.Q2.Reset()
 		p.Broadcast(PreCommit{
 			Ballot:     p.ballot,
 			ID:         p.ID(),
 			Slot:       m.Slot,
 			Request:    m.Request,
-			Command:    m.Command,
 			Commit:		true,
 		})
 	}
@@ -238,7 +242,6 @@ func (p *Tendermint) HandlePreCommit(m PreCommit) {
 			ID:      p.ID(),
 			Slot:    m.Slot,
 			Request: m.Request,
-			Command: m.Command,
 		})
 	}
 
@@ -252,11 +255,9 @@ func (p *Tendermint) HandlePreCommit(m PreCommit) {
 		return
 	}
 	e.commit = true
-	_, ok1 := p.logR[m.Slot]
-	if !ok1{
-		return
-	}
-	if e.commit == true{
+	e.Cstatus = COMMITTED
+	e.Pstatus = PREPARED
+	if e.Rstatus == RECEIVED && e.Leader == false{
 		p.exec()
 	}
 }
@@ -280,61 +281,39 @@ func (p *Tendermint) HandleActPreCommit(m ActPreCommit) {
 	}
 }
 func (p *Tendermint) exec() {
-		log.Debugf("<--------------------exec()------------------>")
-		for {
-			log.Debugf("p.execute %v", p.execute)
-			e, ok := p.log[p.execute]
-			if !ok{
-				return
-			}
-			if !ok || !e.commit {
-				log.Debugf("BREAK")
-				break
-			}
-			value := p.Execute(e.command)
-
-			if e.request != nil && e.active {
-				reply := PaxiBFT.Reply{
-					Command:    e.request.Command,
-					Value:      value,
-					Properties: make(map[string]string),
-				}
-				reply.Properties[HTTPHeaderSlot] = strconv.Itoa(p.execute)
-				reply.Properties[HTTPHeaderBallot] = e.Ballot.String()
-				reply.Properties[HTTPHeaderExecute] = strconv.Itoa(p.execute)
-				e.request.Reply(reply)
-				log.Debugf("********* Reply Primary *********")
-				e.request = nil
-				e.active = false
-				p.view.Reset(p.ID())
-			}
-
-			if p.Leader == false {
-				d, d1 := p.logR[p.execute]
-				if !d1{
-					log.Debugf("d is nil")
-					break
-				}
-				if e.request != nil && !e.active {
-					log.Debugf("********* Replica Request ********* ")
-					p.mux.Lock()
-					reply := PaxiBFT.Reply{
-						Command:    d.request.Command,
-						Value:      value,
-						Properties: make(map[string]string),
-					}
-					p.mux.Unlock()
-					reply.Properties[HTTPHeaderSlot] = strconv.Itoa(p.execute)
-					reply.Properties[HTTPHeaderBallot] = e.Ballot.String()
-					reply.Properties[HTTPHeaderExecute] = strconv.Itoa(p.execute)
-					d.request.Reply(reply)
-					d.request = nil
-					log.Debugf("********* Reply Replicas *********")
-				}
-			}
-			// TODO clean up the log periodically
-			delete(p.log, p.execute)
-			delete(p.logR, p.execute)
-			p.execute++
+	log.Debugf("<--------------------exec()------------------>")
+	for {
+		log.Debugf("p.execute %v", p.execute)
+		e, ok := p.log[p.execute]
+		if !ok || !e.commit {
+			log.Debugf("Break")
+			break
 		}
+		if e.Rstatus != RECEIVED {
+			log.Debugf("Not RECEIVED")
+			break
+		}
+		value := p.Execute(e.request.Command)
+		reply := PaxiBFT.Reply{
+			Command:    e.request.Command,
+			Value:      value,
+			Properties: make(map[string]string),
+		}
+
+		if e.request != nil && e.Leader {
+			e.request.Reply(reply)
+			log.Debugf("********* Reply Primary *********")
+			e.request = nil
+		}else{
+			log.Debugf("********* Replica Request ********* ")
+			log.Debugf("reply= %v", e.request)
+			e.request.Reply(reply)
+			e.request = nil
+			log.Debugf("********* Reply Replicas *********")
+
+		}
+		// TODO clean up the log periodically
+		delete(p.log, p.execute)
+		p.execute++
+	}
 }

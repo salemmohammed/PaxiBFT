@@ -49,7 +49,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 
 	log.Debugf("p.slot %v", p.slot)
 	p.Member.Addmember(m.NodeID)
-	p.Requests = append(p.Requests, &m)
+	//p.Requests = append(p.Requests, &m)
 
 	e,ok := p.log[p.slot]
 	if !ok{
