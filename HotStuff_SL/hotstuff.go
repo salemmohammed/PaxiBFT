@@ -64,7 +64,7 @@ func NewHotStuff(n PaxiBFT.Node, options ...func(*HotStuff)) *HotStuff {
 		Requests:      	 	make([]*PaxiBFT.Request,0),
 		count:				0,
 		Missedrequest:      make([]*PaxiBFT.Request,0),
-		Node_ID:            PaxiBFT.ID(strconv.Itoa(0) + "." + strconv.Itoa(0)),
+		//Node_ID:            PaxiBFT.ID(strconv.Itoa(0) + "." + strconv.Itoa(0)),
 	}
 	for _, opt := range options {
 		opt(p)
@@ -85,55 +85,14 @@ func RemoveIndex(s []*PaxiBFT.Request, index int) []*PaxiBFT.Request {
 }
 func (p *HotStuff) HandleRequest(r PaxiBFT.Request, slot int,total int) {
 	log.Debugf("<---Start----HandleRequest----Start------>")
-	//flag := false
-	//var req PaxiBFT.Request
-	//for _,v := range r {
-	//	req = *v
-	//	break
-	//}
-	//for i,v := range r {
-		log.Debugf("Request in  loop =%v", r)
-		//flag = true
-		p.Broadcast(Prepare{
-		Ballot:     p.ballot,
-		ID:         p.ID(),
-		Slot:       slot,
-		Request:	r,
+	log.Debugf("Request in  loop =%v", r)
+
+	p.Broadcast(Prepare{
+	Ballot:     p.ballot,
+	ID:         p.ID(),
+	Slot:       slot,
+	Request:	r,
 	})
-		//p.Requests[i] = p.Requests[len(p.Requests)-1]
-		//p.Requests = p.Requests[:len(p.Requests)-1]
-		//p.Requests = RemoveIndex(p.Requests, i)
-
-		//if(len(ListRequest)>0) {
-		//	for j, v := range ListRequest {
-		//		log.Debugf("ListRequest in  loop =%v", v)
-		//		if i == j {
-		//			ListRequest[i] = ListRequest[len(ListRequest)-1]
-		//			ListRequest = ListRequest[:len(ListRequest)-1]
-		//		}
-		//	}
-		//}
-		//break
-	//}
-
-	//if flag == false {
-	//	if (len(ListRequest) > 0) {
-	//		for i, v := range ListRequest {
-	//			p.Broadcast(Prepare{
-	//				Ballot:  p.ballot,
-	//				ID:      p.ID(),
-	//				Slot:    p.slot,
-	//				Request: *v,
-	//			})
-	//			ListRequest[i] = ListRequest[len(ListRequest)-1]
-	//			ListRequest = ListRequest[:len(ListRequest)-1]
-	//
-	//			break
-	//		}
-	//
-	//	}
-	//}
-
 	w := ((slot % total + 1) + 1)
 	if w > total{
 		w = (w % total)
@@ -148,20 +107,6 @@ func (p *HotStuff) handlePrepare(m Prepare) {
 	log.Debugf("m.slot %v", m.Slot)
 	log.Debugf("sender %v", m.ID)
 
-
-	log.Debugf("ListRequest= %v", ListRequest)
-
-	log.Debugf("p.Requests = %v ", p.Requests)
-
-	log.Debugf("m.Request.Command.Key = %v ", m.Request.Command.Key)
-
-	//for i, v := range ListRequest {
-	//	log.Debugf("Request in  loop =%v", v)
-	//	log.Debugf("i =%v", i)
-	//	if m.Request.Command.Key == v.Command.Key {
-	//		RemoveIndex(ListRequest, i)
-	//	}
-	//}
 
 	//log.Debugf("ListRequest = %v", ListRequest)
 	log.Debugf("p.Requests = %v ", p.Requests)
@@ -186,13 +131,11 @@ func (p *HotStuff) handlePrepare(m Prepare) {
 			leader:     false,
 			commit:    	false,
 			Digest:     GetMD5Hash(&m.Request),
-			slot: m.Slot,
-			MyTurn:     true,
+			slot:       m.Slot,
+			MyTurn:     false,
 		}
 	}
-
 	e = p.log[m.Slot]
-	e.Pstatus = PREPARED
 
 	p.Send(m.ID, ActPrepare{
 		Ballot:     m.Ballot,
@@ -223,7 +166,7 @@ func (p *HotStuff) handleActPrepare(m ActPrepare){
 		Ballot:     p.ballot,
 		ID:         p.ID(),
 		Slot:       m.Slot,
-		Digest:    m.Digest,
+		Digest:     m.Digest,
 	})
 	}
 }
@@ -331,6 +274,7 @@ func (p *HotStuff) handleDecide(m Decide) {
 	}
 	e.commit = true
 	e.Cstatus = COMMITTED
+	e.Pstatus = PREPARED
 	log.Debugf("e.Pstatus = %v", e.Pstatus)
 	log.Debugf("e.Cstatus = %v", e.Cstatus)
 	if e.Rstatus == RECEIVED{

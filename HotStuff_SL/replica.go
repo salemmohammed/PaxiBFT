@@ -18,7 +18,7 @@ const (
 	HTTPHeaderExecute    = "Execute"
 	HTTPHeaderInProgress = "Inprogress"
 )
-var ListRequest []*PaxiBFT.Request
+//var ListRequest []*PaxiBFT.Request
 
 var t int
 func NewReplica(id PaxiBFT.ID) *Replica {
@@ -80,6 +80,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	w := p.slot % e.Q1.Total() + 1
 	p.Node_ID = PaxiBFT.ID(strconv.Itoa(1) + "." + strconv.Itoa(w))
 	log.Debugf("p.Node_ID = %v", p.Node_ID)
+
 	if p.Node_ID == p.ID() {
 		fmt.Println("w=%v", w)
 		log.Debugf(" The request appended = %v ", m.Command.Key)
@@ -96,22 +97,22 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	//ListRequest = append(ListRequest, &m)
 
 	//log.Debugf("p.Missedrequest = %v", p.Missedrequest)
-	log.Debugf("ListRequest = %v", ListRequest )
+	//log.Debugf("ListRequest = %v", ListRequest )
 
 	log.Debugf("p.Requests = %v ", p.Requests)
 	if (p.ID() == p.Node_ID){
 
 		log.Debugf("p.slot module e.Q2.Total1() == 0 = %v ", (p.slot % e.Q2.Total1()))
-		if p.slot % e.Q2.Total1() == 0{
+		if p.slot % e.Q2.Total1() == 0 && e.Sent == false{
 			e.Sent = true
 			log.Debugf("slot = %v", p.slot)
-			p.HandleRequest(m,p.slot,e.Q1.Total())
+			p.HandleRequest(m,p.slot,t)
 		}
 		log.Debugf(" value = %v, e.MyTurn = %v ", e.slot , e.MyTurn)
 		if p.slot > 0 && e.MyTurn == true && e.Sent == false{
 			e.Sent = true
 			log.Debugf("slot = %v", p.slot)
-			p.HandleRequest(m,p.slot,e.Q1.Total())
+			p.HandleRequest(m,p.slot,t)
 		}
 	}
 	e.Rstatus = RECEIVED
@@ -155,9 +156,10 @@ func (p *HotStuff) handleRound(m RoundRobin) {
 				active:    false,
 				leader:    false,
 				commit:    false,
+				Sent:      false,
 				MyTurn:    true,
 				Digest:    GetMD5Hash(&m.Request),
-				slot:      m.Slot,
+				slot:      p.slot,
 			}
 		}
 	}
