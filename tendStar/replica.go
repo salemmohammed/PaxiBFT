@@ -148,7 +148,7 @@ func (p *Tendermint) handleRound(m RoundRobin) {
 				commit:    	false,
 				Sent:      false,
 				MyTurn:    true,
-				Slot:       p.slot,
+				Slot:      m.Slot,
 			}
 		}
 	}

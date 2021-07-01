@@ -62,9 +62,6 @@ func NewHotStuff(n PaxiBFT.Node, options ...func(*HotStuff)) *HotStuff {
 		slot:          	 	-1,
 		quorum:        	 	PaxiBFT.NewQuorum(),
 		Requests:      	 	make([]*PaxiBFT.Request,0),
-		count:				0,
-		Missedrequest:      make([]*PaxiBFT.Request,0),
-		//Node_ID:            PaxiBFT.ID(strconv.Itoa(0) + "." + strconv.Itoa(0)),
 	}
 	for _, opt := range options {
 		opt(p)
@@ -160,7 +157,7 @@ func (p *HotStuff) handleActPrepare(m ActPrepare){
 		return
 	}
 	e.Q1.ACK(m.ID)
-	if e.Q1.Majority(){
+	if e.Q1.Majority() && e.active{
 		e.Q1.Reset()
 		p.Broadcast(PreCommit{
 		Ballot:     p.ballot,
@@ -202,7 +199,7 @@ func (p *HotStuff) handleActPreCommit(m ActPreCommit) {
 		return
 	}
 	e.Q2.ACK(m.ID)
-	if e.Q2.Majority(){
+	if e.active && e.Q2.Majority(){
 		e.Q2.Reset()
 		p.Broadcast(Commit{
 			Ballot:     p.ballot,
@@ -224,7 +221,7 @@ func (p *HotStuff) handleCommit(m Commit) {
 		Ballot:  p.ballot,
 		ID:      p.ID(),
 		Slot:    m.Slot,
-		Digest: m.Digest,
+		Digest:  m.Digest,
 	})
 }
 func (p *HotStuff) handleActCommit(m ActCommit) {
@@ -241,7 +238,7 @@ func (p *HotStuff) handleActCommit(m ActCommit) {
 		return
 	}
 	e.Q3.ACK(m.ID)
-	if e.Q3.Majority() {
+	if e.active && e.Q3.Majority() {
 		e.Q3.Reset()
 		p.Broadcast(Decide{
 			Ballot: p.ballot,
@@ -272,12 +269,13 @@ func (p *HotStuff) handleDecide(m Decide) {
 		log.Debugf("Return")
 		return
 	}
-	e.commit = true
+
 	e.Cstatus = COMMITTED
 	e.Pstatus = PREPARED
 	log.Debugf("e.Pstatus = %v", e.Pstatus)
 	log.Debugf("e.Cstatus = %v", e.Cstatus)
 	if e.Rstatus == RECEIVED{
+		e.commit = true
 		p.exec()
 	}
 }
@@ -294,7 +292,10 @@ func (p *HotStuff) exec() {
 		log.Debugf("Break commit")
 		break
 		}
-
+		if e.Rstatus != RECEIVED {
+			log.Debugf("Not RECEIVED")
+			break
+		}
 		value := p.Execute(e.request.Command)
 
 		if e.request != nil && e.leader{

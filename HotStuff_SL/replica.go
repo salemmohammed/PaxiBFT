@@ -18,7 +18,6 @@ const (
 	HTTPHeaderExecute    = "Execute"
 	HTTPHeaderInProgress = "Inprogress"
 )
-//var ListRequest []*PaxiBFT.Request
 
 var t int
 func NewReplica(id PaxiBFT.ID) *Replica {
@@ -46,6 +45,9 @@ func NewReplica(id PaxiBFT.ID) *Replica {
 func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	log.Debugf("<-----------handleRequest----------->")
 	if p.slot <= 0 {
+		fmt.Print("-------------------HotStuff-------------------------")
+	}
+	if p.slot % 1000 == 0 {
 		fmt.Print("-------------------HotStuff-------------------------")
 	}
 	p.slot++
@@ -93,15 +95,8 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 		e.Pstatus = PREPARED
 		//p.Requests = append(p.Requests, &m)
 	}
-	//p.Missedrequest = append(p.Requests, &m)
-	//ListRequest = append(ListRequest, &m)
 
-	//log.Debugf("p.Missedrequest = %v", p.Missedrequest)
-	//log.Debugf("ListRequest = %v", ListRequest )
-
-	log.Debugf("p.Requests = %v ", p.Requests)
 	if (p.ID() == p.Node_ID){
-
 		log.Debugf("p.slot module e.Q2.Total1() == 0 = %v ", (p.slot % e.Q2.Total1()))
 		if p.slot % e.Q2.Total1() == 0 && e.Sent == false{
 			e.Sent = true
@@ -118,7 +113,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 	e.Rstatus = RECEIVED
 	log.Debugf("e.Pstatus = %v", e.Pstatus)
 	log.Debugf("e.Cstatus = %v", e.Cstatus)
-	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED && e.Rstatus == RECEIVED{
+	if e.Cstatus == COMMITTED && e.Pstatus == PREPARED {
 		log.Debug("late call")
 		e.commit = true
 		p.exec()
@@ -159,7 +154,7 @@ func (p *HotStuff) handleRound(m RoundRobin) {
 				Sent:      false,
 				MyTurn:    true,
 				Digest:    GetMD5Hash(&m.Request),
-				slot:      p.slot,
+				slot:      m.Slot,
 			}
 		}
 	}
