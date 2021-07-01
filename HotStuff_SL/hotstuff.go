@@ -139,6 +139,7 @@ func (p *HotStuff) handlePrepare(m Prepare) {
 		ID:         p.ID(),
 		Slot:       m.Slot,
 		Digest:     e.Digest,
+		Request:	m.Request,
 	})
 	log.Debugf("++++++++++++++++++++++++++ handlePropose Done ++++++++++++++++++++++++++")
 }
@@ -164,6 +165,7 @@ func (p *HotStuff) handleActPrepare(m ActPrepare){
 		ID:         p.ID(),
 		Slot:       m.Slot,
 		Digest:     m.Digest,
+		Request:	m.Request,
 	})
 	}
 }
@@ -182,6 +184,7 @@ func (p *HotStuff) handlePreCommit(m PreCommit) {
 		ID:         p.ID(),
 		Slot:       m.Slot,
 		Digest:     m.Digest,
+		Request:	m.Request,
 	})
 }
 func (p *HotStuff) handleActPreCommit(m ActPreCommit) {
@@ -206,6 +209,7 @@ func (p *HotStuff) handleActPreCommit(m ActPreCommit) {
 			ID:         p.ID(),
 			Slot:       m.Slot,
 			Digest:    m.Digest,
+			Request:	m.Request,
 		})
 	}
 }
@@ -222,6 +226,7 @@ func (p *HotStuff) handleCommit(m Commit) {
 		ID:      p.ID(),
 		Slot:    m.Slot,
 		Digest:  m.Digest,
+		Request: m.Request,
 	})
 }
 func (p *HotStuff) handleActCommit(m ActCommit) {
@@ -245,6 +250,7 @@ func (p *HotStuff) handleActCommit(m ActCommit) {
 			ID:     p.ID(),
 			Slot:   m.Slot,
 			Digest: m.Digest,
+			Request:	m.Request,
 		})
 		e.commit = true
 		e.Cstatus = COMMITTED

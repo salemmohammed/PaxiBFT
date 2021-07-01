@@ -35,24 +35,27 @@ type ActPrepare struct {
 	ID     	PaxiBFT.ID
 	Digest  []byte
 	Slot 	int
+	Request 	PaxiBFT.Request
 }
 func (m ActPrepare) String() string {
-	return fmt.Sprintf("ActPrepare {Ballot %v, Digest %v, Slot %v}", m.Ballot,  m.Digest,m.Slot)
+	return fmt.Sprintf("ActPrepare {Ballot %v, Digest %v, Slot %v , Request %v}", m.Ballot,  m.Digest,m.Slot, m.Request)
 }
 type PreCommit struct {
 	Ballot 		PaxiBFT.Ballot
 	ID     		PaxiBFT.ID
 	Digest 	    []byte
 	Slot 		int
+	Request 	PaxiBFT.Request
 }
 func (m PreCommit) String() string {
-	return fmt.Sprintf("PreCommit {Ballot %v,Digest %v, Slot %v}", m.Ballot, m.Digest, m.Slot)
+	return fmt.Sprintf("PreCommit {Ballot %v,Digest %v, Slot %v , Request %v}", m.Ballot, m.Digest, m.Slot,m.Request)
 }
 type ActPreCommit struct {
 	Ballot 	PaxiBFT.Ballot
 	ID     	PaxiBFT.ID
 	Digest  []byte
 	Slot 	int
+	Request 	PaxiBFT.Request
 }
 func (m ActPreCommit) String() string {
 	return fmt.Sprintf("ActPreCommit {Ballot %v, Digest %v, Slot %v}", m.Ballot,  m.Digest,m.Slot)
@@ -62,6 +65,7 @@ type Commit struct {
 	ID     	PaxiBFT.ID
 	Digest  []byte
 	Slot 	int
+	Request 	PaxiBFT.Request
 }
 func (m Commit) String() string {
 	return fmt.Sprintf("Commit {Ballot %v, Digest %v, Slot %v}", m.Ballot,  m.Digest, m.Slot)
@@ -71,6 +75,7 @@ type ActCommit struct {
 	ID     	PaxiBFT.ID
 	Digest  []byte
 	Slot 	int
+	Request 	PaxiBFT.Request
 }
 func (m ActCommit) String() string {
 	return fmt.Sprintf("ActCommit {Ballot %v, Digest %v,Slot %v}", m.Ballot,  m.Digest,m.Slot)
@@ -80,6 +85,7 @@ type Decide struct {
 	ID     	PaxiBFT.ID
 	Digest []byte
 	Slot 	int
+	Request 	PaxiBFT.Request
 }
 func (m Decide) String() string {
 	return fmt.Sprintf("Decide {Ballot %v, Digest %v, Slot %v}", m.Ballot,m.Digest,m.Slot)
@@ -89,6 +95,7 @@ type ActDecide struct {
 	ID     	PaxiBFT.ID
 	Digest  []byte
 	Slot 	int
+	Request 	PaxiBFT.Request
 }
 func (m ActDecide) String() string {
 	return fmt.Sprintf("ActDecide {Ballot %v, Digest %v,Slot %v}", m.Ballot,m.Digest,m.Slot)
