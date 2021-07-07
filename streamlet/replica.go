@@ -80,7 +80,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 
 		log.Debugf("p.slot module e.Q2.Total1() == 0 = %v ", (p.slot % e.Q2.Total1()))
 		if p.slot % e.Q2.Total1() == 0 && e.Sent == false{
-			time.Sleep(3 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			e.Sent = true
 			log.Debugf("slot = %v", p.slot)
 			log.Debugf("t = %v", t)
@@ -89,7 +89,7 @@ func (p *Replica) handleRequest(m PaxiBFT.Request) {
 		log.Debugf(" value = %v, e.MyTurn = %v ", e.slot , e.MyTurn)
 		if p.slot > 0 && e.MyTurn == true && e.Sent == false{
 			e.Sent = true
-			time.Sleep(3 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			log.Debugf("slot = %v", p.slot)
 			p.HandleRequest(m,p.slot,t)
 		}
