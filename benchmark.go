@@ -11,7 +11,7 @@ import (
 // DB is general interface implemented by client to call client library
 type DB interface {
 	Init() error
-	Write(key int, value int) error
+	Write(key int, value []byte) error
 	Stop() error
 }
 
@@ -43,6 +43,7 @@ type Bconfig struct {
 
 	// exponential distribution
 	Lambda float64 // rate parameter
+	Size int // payload size
 }
 
 // DefaultBConfig returns a default benchmark config
@@ -65,6 +66,7 @@ func DefaultBConfig() Bconfig {
 		ZipfianS:             2,
 		ZipfianV:             1,
 		Lambda:               0.01,
+		Size:				  128,
 	}
 }
 
@@ -252,13 +254,13 @@ func (b *Benchmark) worker(keys <-chan int, result chan<- time.Duration) {
 	log.Debugf("worker")
 	var s time.Time
 	var e time.Time
-	var v int
+	var v []byte
 	var err error
 	//data := make([]byte, 100)
 	for k := range keys {
 		op := new(operation)
 		if rand.Float64() < b.W {
-			v = rand.Int()
+			v = GenerateRandVal(b.Bconfig.Size)
 			s = time.Now()
 			//time.Sleep(2 * time.Millisecond)
 			err = b.db.Write(k,v)

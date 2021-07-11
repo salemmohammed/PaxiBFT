@@ -84,3 +84,14 @@ func ConnectToMaster(addr string, client bool, id ID) {
 		log.Fatal(err)
 	}
 }
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func GenerateRandVal(n int) []byte {
+	bts := make([]byte, n)
+	for i := range bts {
+		bts[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return bts
+}
+
