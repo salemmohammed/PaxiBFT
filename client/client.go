@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/binary"
+	//"encoding/binary"
 	"flag"
 	"github.com/salemmohammed/PaxiBFT/log"
 	"github.com/salemmohammed/PaxiBFT/paxos"
@@ -29,13 +29,13 @@ func (d *db) Stop() error {
 }
 
 
-func (d *db) Write(k int, v int) error {
+func (d *db) Write(k int, v []byte) error {
 	key := PaxiBFT.Key(k)
-	value := make([]byte, binary.MaxVarintLen64)
+	//value := make([]byte, binary.MaxVarintLen64)
 	//value := make([]byte, 10000)
 	//binary.ByteOrder(v)
-	binary.PutUvarint(value, uint64(v))
-	err := d.PutMUL(key, value)
+	//binary.PutUvarint(value, uint64(v))
+	err := d.PutMUL(key, v)
 	//err := d.Put(key, value)
 	return err
 }

@@ -3,10 +3,10 @@ package PaxiBFT
 import (
 	"encoding/gob"
 	"fmt"
+	"github.com/salemmohammed/PaxiBFT/log"
+	"math/rand"
 	"net"
 	"time"
-
-	"github.com/salemmohammed/PaxiBFT/log"
 )
 
 // Max of two int
