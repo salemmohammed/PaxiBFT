@@ -66,7 +66,7 @@ func DefaultBConfig() Bconfig {
 		ZipfianS:             2,
 		ZipfianV:             1,
 		Lambda:               0.01,
-		Size:				  256,
+		Size:				  128,
 	}
 }
 
