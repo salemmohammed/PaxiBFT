@@ -2,7 +2,7 @@
 
 **PaxiBFT** is a modular and extensible framework written in Go for implementing, benchmarking, and evaluating Byzantine Fault Tolerant (BFT) consensus protocols. It provides a unified environment for testing and comparing BFT protocols under standardized conditions.
 
-## 📌 Overview
+## Overview
 
 This framework helps researchers and engineers to:
 
@@ -10,7 +10,7 @@ This framework helps researchers and engineers to:
 - Benchmark different protocols using the same environment.
 - Analyze performance metrics like latency, throughput, and commit rate.
 
-## 🚀 Implemented Protocols
+## Implemented Protocols
 
 - PBFT
 - Paxos
@@ -20,7 +20,7 @@ This framework helps researchers and engineers to:
 
 Each protocol is implemented as a pluggable module with a standard interface.
 
-## ⚙️ Installation
+## Installation
 
 Requires Go 1.17+.
 
@@ -30,7 +30,7 @@ cd PaxiBFT
 go mod tidy
 ```
 
-## ▶️ Usage
+## Usage
 
 Run a protocol with default parameters:
 
@@ -43,7 +43,7 @@ go run main.go -protocol=pbft -nodes=4 -f=1
 - `-nodes`: Number of nodes (e.g., 4)
 - `-f`: Number of tolerated Byzantine faults
 
-## 📁 Configuration
+## Configuration
 
 You can configure experiments via a YAML file in the `config/` directory:
 
@@ -56,7 +56,7 @@ block_size: 10
 duration: 60  # seconds
 ```
 
-## 📊 Output Format
+## Output Format
 
 PaxiBFT produces logs with the following metrics (in `logs/` folder):
 
@@ -79,17 +79,7 @@ Example output (`.json` or `.csv`):
 }
 ```
 
-## 🧪 Benchmarking
-
-To benchmark all protocols:
-
-```bash
-go test -bench=. ./benchmark/
-```
-
-Results will be printed in the console or saved in `benchmark_results/`.
-
-## 💡 Example
+## Example
 
 To run Tendermint for 60 seconds with 4 nodes:
 
@@ -99,17 +89,14 @@ go run main.go -protocol=tendermint -nodes=4 -duration=60
 
 Check the `logs/` directory for results.
 
-## 📚 Publications
+## Publications
 
 This framework is featured in:
 
 - **Bottlenecks in Blockchain Consensus Protocols**  
   [IEEE Xplore](https://ieeexplore.ieee.org/document/9524210)
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please open an issue or submit a pull request to get started.
 
-## 📄 License
-
-MIT License
